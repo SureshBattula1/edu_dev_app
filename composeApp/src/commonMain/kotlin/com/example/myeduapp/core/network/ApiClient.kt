@@ -1,6 +1,5 @@
 package com.example.myeduapp.core.network
 
-import com.example.myeduapp.core.network.mock.MockApiEngine
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -18,10 +17,8 @@ object ApiClient {
         ignoreUnknownKeys = true
     }
 
-    val client: HttpClient = if (ApiConfig.USE_MOCKS) {
-        HttpClient(MockApiEngine.create()) { installPlugins() }
-    } else {
-        HttpClient { installPlugins() }
+    val client: HttpClient = HttpClient {
+        installPlugins()
     }
 
     private fun HttpClientConfig<*>.installPlugins() {
@@ -35,9 +32,9 @@ object ApiClient {
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 15000
-            connectTimeoutMillis = 15000
-            socketTimeoutMillis = 15000
+            requestTimeoutMillis = 30000 // Increased for real backend
+            connectTimeoutMillis = 30000
+            socketTimeoutMillis = 30000
         }
 
         defaultRequest {

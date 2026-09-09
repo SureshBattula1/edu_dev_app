@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
@@ -15,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
@@ -93,7 +93,6 @@ class MainScreen : Screen {
         val user = (authState as? AuthState.Authenticated)?.user ?: return
         val role = user.userRole
         
-        val navItems = AppNavigation.getBottomNavItems(role)
         val drawerItems = AppNavigation.getDrawerItems(role)
 
         var showLogoutDialog by remember { mutableStateOf(false) }
@@ -123,15 +122,15 @@ class MainScreen : Screen {
             )
         }
 
-        val defaultHomeRoute = AppNavigation.defaultHomeRoute(role)
-        val initialSelectedIndex = navItems.indexOfFirst { it.route == defaultHomeRoute }.coerceAtLeast(0)
-        var selectedItem by remember { mutableStateOf(initialSelectedIndex) }
         val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                ModalDrawerSheet {
+                ModalDrawerSheet(
+                    drawerContainerColor = Color.White,
+                    drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -145,7 +144,7 @@ class MainScreen : Screen {
                                     scope.launch { drawerState.close() }
                                     navigator.push(ProfileScreen())
                                 }
-                                .padding(16.dp)
+                                .padding(24.dp)
                         ) {
                             Box(
                                 modifier = Modifier.size(64.dp)
@@ -154,21 +153,21 @@ class MainScreen : Screen {
                             ) {
                                 Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(user.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text(role.name.replace("_", " "), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(user.name, style = MaterialTheme.typography.titleLarge)
+                            Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                         
                         drawerItems.forEach { item ->
                             NavigationDrawerItem(
                                 icon = { Icon(item.icon, contentDescription = null) },
-                                label = { Text(item.label) },
+                                label = { Text(item.label, style = MaterialTheme.typography.bodyMedium) },
                                 selected = false,
                                 onClick = {
                                     scope.launch { drawerState.close() }
                                     when (item.route) {
-                                        Route.Dashboard -> { selectedItem = 0 }
+                                        Route.Dashboard -> { /* Already on dashboard root */ }
                                         Route.MyClasses -> navigator.push(MyClassesScreen())
                                         Route.MyStudents -> navigator.push(MyStudentsScreen())
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
@@ -183,7 +182,11 @@ class MainScreen : Screen {
                                         else -> navigator.push(PlaceholderScreen(item.label))
                                     }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                                colors = NavigationDrawerItemDefaults.colors(
+                                    unselectedContainerColor = Color.Transparent,
+                                    unselectedIconColor = Color(0xFF64748B)
+                                )
                             )
                         }
                         
@@ -191,115 +194,65 @@ class MainScreen : Screen {
                         
                         NavigationDrawerItem(
                             icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-                            label = { Text("Logout") },
+                            label = { Text("Logout", style = MaterialTheme.typography.bodyMedium) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
                                 showLogoutDialog = true
                             },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                            colors = NavigationDrawerItemDefaults.colors(
+                                unselectedIconColor = MaterialTheme.colorScheme.error
+                            )
                         )
                     }
                 }
             }
         ) {
-            Scaffold(
-                bottomBar = {
-                    if (navItems.isNotEmpty()) {
-                        NavigationBar(
-                            modifier = Modifier.height(56.dp),
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                            windowInsets = WindowInsets(0, 0, 0, 0)
-                        ) {
-                            navItems.forEachIndexed { index, item ->
-                                NavigationBarItem(
-                                    icon = { Icon(item.icon, contentDescription = item.label) },
-                                    label = { Text(item.label, fontSize = 12.sp) },
-                                    selected = selectedItem == index,
-                                    onClick = { selectedItem = index }
-                                )
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (role == UserRole.TEACHER) {
+                    TeacherDashboardScreen(
+                        user = user,
+                        onNavigate = { route ->
+                            val targetScreen: Screen = when(route) {
+                                Route.Profile.path -> ProfileScreen()
+                                Route.MyClasses.path -> MyClassesScreen()
+                                Route.MyStudents.path -> MyStudentsScreen()
+                                Route.Assignments.path -> AssignmentsScreen()
+                                Route.Exams.path -> TeacherExamsScreen()
+                                Route.Marks.path -> MarksScreen()
+                                Route.Attendance.path -> TeacherAttendanceScreen()
+                                Route.Fees.path -> TeacherFeesScreen()
+                                Route.Leaves.path -> TeacherLeaveScreen()
+                                Route.Timetable.path -> TeacherTimetableScreen()
+                                Route.Notices.path -> TeacherCommunicationScreen()
+                                else -> PlaceholderScreen(route.replace("_", " ").capitalize())
                             }
-                        }
-                    }
-                }
-            ) { padding ->
-                Box(modifier = Modifier.padding(padding)) {
-                    val currentItem = navItems.getOrNull(selectedItem)
-                    val currentRoute = currentItem?.route ?: Route.Dashboard
-
-                    when (currentRoute) {
-                        Route.Dashboard -> {
-                            if (role == UserRole.TEACHER) {
-                                TeacherDashboardScreen(
-                                    user = user,
-                                    onNavigate = { route ->
-                                        val targetScreen: Screen = when(route) {
-                                            Route.Profile.path -> ProfileScreen()
-                                            Route.MyClasses.path -> MyClassesScreen()
-                                            Route.MyStudents.path -> MyStudentsScreen()
-                                            Route.Assignments.path -> AssignmentsScreen()
-                                            Route.Exams.path -> TeacherExamsScreen()
-                                            Route.Marks.path -> MarksScreen()
-                                            Route.Attendance.path -> TeacherAttendanceScreen()
-                                            Route.Fees.path -> TeacherFeesScreen()
-                                            Route.Leaves.path -> TeacherLeaveScreen()
-                                            Route.Timetable.path -> TeacherTimetableScreen()
-                                            Route.Notices.path -> TeacherCommunicationScreen()
-                                            else -> PlaceholderScreen(route.replace("_", " ").capitalize())
-                                        }
-                                        navigator.push(targetScreen)
-                                    },
-                                    onMenuClick = { scope.launch { drawerState.open() } },
-                                    onNotificationClick = { /* Handle notifications */ }
-                                )
-                            } else {
-                                DashboardScreen(
-                                    onNavigate = { route ->
-                                        val targetScreen: Screen = when(route) {
-                                            Route.Profile.path -> ProfileScreen()
-                                            Route.MyClasses.path -> MyClassesScreen()
-                                            Route.MyStudents.path -> MyStudentsScreen()
-                                            Route.Attendance.path -> TeacherAttendanceScreen()
-                                            Route.Fees.path -> TeacherFeesScreen()
-                                            Route.Exams.path -> TeacherExamsScreen()
-                                            Route.Leaves.path -> TeacherLeaveScreen()
-                                            Route.Timetable.path -> TeacherTimetableScreen()
-                                            Route.Notices.path -> TeacherCommunicationScreen()
-                                            else -> PlaceholderScreen(route.replace("_", " ").capitalize())
-                                        }
-                                        navigator.push(targetScreen)
-                                    },
-                                    onMenuClick = { scope.launch { drawerState.open() } },
-                                    onNotificationClick = { /* Handle notifications */ }
-                                )
+                            navigator.push(targetScreen)
+                        },
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onNotificationClick = { /* Handle notifications */ }
+                    )
+                } else {
+                    DashboardScreen(
+                        onNavigate = { route ->
+                            val targetScreen: Screen = when(route) {
+                                Route.Profile.path -> ProfileScreen()
+                                Route.MyClasses.path -> MyClassesScreen()
+                                Route.MyStudents.path -> MyStudentsScreen()
+                                Route.Attendance.path -> TeacherAttendanceScreen()
+                                Route.Fees.path -> TeacherFeesScreen()
+                                Route.Exams.path -> TeacherExamsScreen()
+                                Route.Leaves.path -> TeacherLeaveScreen()
+                                Route.Timetable.path -> TeacherTimetableScreen()
+                                Route.Notices.path -> TeacherCommunicationScreen()
+                                else -> PlaceholderScreen(route.replace("_", " ").capitalize())
                             }
-                        }
-                        Route.Attendance -> {
-                            TeacherAttendanceScreenContent(
-                                onBack = null,
-                                onMarkAttendance = { navigator.push(CreateAttendanceScreen()) }
-                            )
-                        }
-                        Route.Fees -> {
-                            TeacherFeesScreenContent(onBack = null)
-                        }
-                        Route.Exams -> {
-                            TeacherExamsScreenContent(onBack = null)
-                        }
-                        Route.Leaves -> {
-                            TeacherLeaveScreenContent(onBack = null)
-                        }
-                        Route.Notices -> {
-                            TeacherNoticesScreenContent(onBack = null)
-                        }
-                        else -> {
-                            val title = currentItem?.label ?: "Screen"
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("$title Screen Coming Soon")
-                            }
-                        }
-                    }
+                            navigator.push(targetScreen)
+                        },
+                        onMenuClick = { scope.launch { drawerState.open() } },
+                        onNotificationClick = { /* Handle notifications */ }
+                    )
                 }
             }
         }

@@ -5,12 +5,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,22 +16,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
+import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.PrimaryText
-import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.data.model.UserRole
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Edit
 
 class ProfileScreen : Screen {
     @Composable
@@ -57,49 +66,40 @@ fun ProfileScreenContent(
     val authState by SessionManager.authState.collectAsState()
     val user = (authState as? AuthState.Authenticated)?.user ?: return
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Profile", "Professional Details", "Content & Activity")
+    val tabs = listOf("Profile", "Professional", "Activity")
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { 
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "Teacher Profile", 
-                            fontSize = 18.sp, 
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
-                        )
-                    }
+                    Text(
+                        "TEACHER PROFILE", 
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        fontSize = 18.sp
+                    )
                 },
                 navigationIcon = {
                     if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Back",
-                                tint = Color.White
-                            )
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.padding(start = 8.dp).size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                         }
-                    } else {
-                        Spacer(modifier = Modifier.width(48.dp))
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToEdit) {
-                        Icon(
-                            Icons.Default.Edit, 
-                            contentDescription = "Edit",
-                            tint = Color.White
-                        )
+                    IconButton(
+                        onClick = onNavigateToEdit,
+                        modifier = Modifier.padding(end = 8.dp).size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = PrimaryBlue,
-                    titleContentColor = Color.White
-                ),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBlue),
                 windowInsets = WindowInsets.statusBars
             )
         }
@@ -111,7 +111,7 @@ fun ProfileScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                TeacherProfileHeader(user)
+                ProfileHeroHeader(user)
             }
             
             item {
@@ -137,18 +137,17 @@ fun ProfileScreenContent(
                     AppCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        elevation = 2f
+                            .padding(horizontal = 24.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(24.dp)
                         ) {
                             when (targetTab) {
                                 0 -> PersonalDetailsSection(user, onNavigateToChangePassword)
                                 1 -> ProfessionalDetailsSection(user)
-                                2 -> ContentActivitySection()
+                                2 -> ContentActivitySection(user)
                             }
                         }
                     }
@@ -163,41 +162,32 @@ fun ProfileScreenContent(
 }
 
 @Composable
-fun TeacherProfileHeader(user: User) {
+fun ProfileHeroHeader(user: User) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(180.dp)
+            .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF007CC4), Color(0xFF299EF2))
+                )
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        // Blue Background overlapping part
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .background(PrimaryBlue)
-        )
-        
-        // Avatar
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
-        ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .shadow(4.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .padding(3.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryBlue.copy(alpha = 0.1f)),
+                    .size(80.dp)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    .padding(4.dp)
+                    .background(Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Person,
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(48.dp),
                     tint = PrimaryBlue
                 )
             }
@@ -205,18 +195,25 @@ fun TeacherProfileHeader(user: User) {
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = user.name,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = PrimaryText
+                text = user.name.ifBlank { "NA" }.uppercase(),
+                style = MaterialTheme.typography.headlineLarge,
+                color = Color.White,
+                fontSize = 20.sp
             )
             
-            Text(
-                text = user.userRole.name.replace("_", " "),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                color = PrimaryBlue
-            )
+            Surface(
+                color = Color.White.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.padding(top = 4.dp)
+            ) {
+                Text(
+                    text = user.userRole.name.replace("_", " "),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                    fontSize = 10.sp
+                )
+            }
         }
     }
 }
@@ -230,10 +227,10 @@ fun ProfileTabs(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 24.dp, start = 16.dp, end = 16.dp),
-        shape = RoundedCornerShape(32.dp),
-        shadowElevation = 4.dp,
-        color = Color.White
+            .padding(top = 24.dp, start = 24.dp, end = 24.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
     ) {
         TabRow(
             selectedTabIndex = selectedTab,
@@ -249,16 +246,14 @@ fun ProfileTabs(
                     selected = isSelected,
                     onClick = { onTabSelected(index) },
                     modifier = Modifier
-                        .padding(horizontal = 2.dp)
-                        .clip(RoundedCornerShape(28.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .background(if (isSelected) PrimaryBlue else Color.Transparent)
-                        .height(36.dp),
+                        .height(40.dp),
                     text = {
                         Text(
                             text = title,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isSelected) Color.White else PrimaryText,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = if (isSelected) Color.White else Color(0xFF64748B),
                             maxLines = 1
                         )
                     }
@@ -279,22 +274,19 @@ fun ProfileInfoRow(label: String, value: String) {
         Text(
             text = label,
             modifier = Modifier.weight(1.2f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodyMedium,
             color = PrimaryText
         )
         Text(
             text = ":",
             modifier = Modifier.width(20.dp),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.bodyMedium,
             color = PrimaryText
         )
         Text(
             text = value,
             modifier = Modifier.weight(2f),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Normal,
+            style = MaterialTheme.typography.bodyLarge,
             color = SecondaryText
         )
     }
@@ -303,25 +295,25 @@ fun ProfileInfoRow(label: String, value: String) {
 @Composable
 fun PersonalDetailsSection(user: User, onChangePassword: () -> Unit) {
     Column {
-        ProfileInfoRow("Full Name", user.name)
-        ProfileInfoRow("Employee ID", "EMP001")
-        ProfileInfoRow("Date of Birth", "15 Aug 1995")
-        ProfileInfoRow("Gender", "Male")
-        ProfileInfoRow("Phone", user.phone ?: "Not Provided")
-        ProfileInfoRow("Email", user.email)
-        ProfileInfoRow("Address", "123 School Lane, Education City")
+        ProfileInfoRow("Full Name", user.name.ifBlank { "NA" })
+        ProfileInfoRow("Employee ID", user.employee_id ?: "NA")
+        ProfileInfoRow("Date of Birth", user.dob ?: "NA")
+        ProfileInfoRow("Gender", user.gender ?: "NA")
+        ProfileInfoRow("Phone", user.phone ?: "NA")
+        ProfileInfoRow("Email", user.email.ifBlank { "NA" })
+        ProfileInfoRow("Address", user.address ?: "NA")
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        OutlinedButton(
+        Button(
             onClick = onChangePassword,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = PrimaryBlue)
         ) {
-            Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp), tint = PrimaryBlue)
+            Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Change Password", color = PrimaryText)
+            Text("CHANGE PASSWORD", style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -329,28 +321,35 @@ fun PersonalDetailsSection(user: User, onChangePassword: () -> Unit) {
 @Composable
 fun ProfessionalDetailsSection(user: User) {
     Column {
-        ProfileInfoRow("Employee ID", "EMP001")
-        ProfileInfoRow("Department", "Mathematics")
-        ProfileInfoRow("Designation", "Senior Teacher")
-        ProfileInfoRow("Qualification", "M.Sc, B.Ed")
-        ProfileInfoRow("Experience", "5 Years")
-        ProfileInfoRow("Joining Date", "10 Jun 2021")
-        ProfileInfoRow("Subjects", "Mathematics, Science")
-        ProfileInfoRow("Classes Assigned", "Grade 6, Grade 7")
-        ProfileInfoRow("Class Teacher", "Grade 7-A")
+        ProfileInfoRow("Employee ID", user.employee_id ?: "NA")
+        ProfileInfoRow("Department", user.department ?: "NA")
+        ProfileInfoRow("Designation", user.designation ?: "NA")
+        ProfileInfoRow("Qualification", user.qualification ?: "NA")
+        ProfileInfoRow("Experience", user.experience ?: "NA")
+        ProfileInfoRow("Joining Date", user.joining_date ?: "NA")
+        ProfileInfoRow("Subjects", if (user.subjects.isEmpty()) "NA" else user.subjects.joinToString(", "))
+        ProfileInfoRow("Classes Assigned", if (user.classes.isEmpty()) "NA" else user.classes.joinToString(", "))
     }
 }
 
 @Composable
-fun ContentActivitySection() {
+fun ContentActivitySection(user: User) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        ActivitySectionHeader("Subjects Teaching")
-        SimpleTagCloud(listOf("Mathematics", "Science"))
+        ActivitySectionHeader("SUBJECTS TEACHING")
+        if (user.subjects.isEmpty()) {
+            Text("NA", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
+        } else {
+            SimpleTagCloud(user.subjects)
+        }
         
-        ActivitySectionHeader("Classes")
-        SimpleTagCloud(listOf("Grade 6", "Grade 7"))
+        ActivitySectionHeader("CLASSES")
+        if (user.classes.isEmpty()) {
+            Text("NA", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
+        } else {
+            SimpleTagCloud(user.classes)
+        }
         
-        ActivitySectionHeader("Content Created")
+        ActivitySectionHeader("CONTENT CREATED")
         ActivityGrid(listOf(
             "Assignments" to Icons.AutoMirrored.Filled.Assignment,
             "Study Materials" to Icons.Default.Book,
@@ -358,11 +357,10 @@ fun ContentActivitySection() {
             "Question Papers" to Icons.Default.Quiz
         ))
         
-        ActivitySectionHeader("Recent Activity")
+        ActivitySectionHeader("RECENT ACTIVITY")
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            RecentActivityItem("Assignment created", "10 mins ago", Icons.Default.AddCircle)
-            RecentActivityItem("Attendance updated", "2 hours ago", Icons.Default.CheckCircle)
-            RecentActivityItem("Study material uploaded", "Yesterday", Icons.Default.CloudUpload)
+            // Activity remains static or we show a placeholder since backend activity feed isn't wired yet
+            RecentActivityItem("No recent activity", "NA", Icons.Default.Info)
         }
     }
 }
@@ -371,9 +369,7 @@ fun ContentActivitySection() {
 fun ActivitySectionHeader(title: String) {
     Text(
         text = title,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = PrimaryText,
+        style = MaterialTheme.typography.headlineMedium,
         modifier = Modifier.padding(bottom = 12.dp)
     )
 }
@@ -383,15 +379,15 @@ fun SimpleTagCloud(tags: List<String>) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         tags.forEach { tag ->
             Surface(
-                color = PrimaryBlue.copy(alpha = 0.05f),
-                shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.1f))
+                color = Color(0xFFE8F2FF),
+                shape = RoundedCornerShape(50),
+                border = BorderStroke(1.dp, Color(0xFF007CC4).copy(alpha = 0.2f))
             ) {
                 Text(
                     text = tag,
-                    fontSize = 13.sp,
+                    style = MaterialTheme.typography.titleSmall,
                     color = PrimaryBlue,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
         }
@@ -404,19 +400,16 @@ fun ActivityGrid(items: List<Pair<String, ImageVector>>) {
         items.chunked(2).forEach { rowItems ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 rowItems.forEach { item ->
-                    Card(
-                        modifier = Modifier.weight(1f),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, Color(0xFFF0F0F0)),
-                        shape = RoundedCornerShape(12.dp)
+                    AppCard(
+                        modifier = Modifier.weight(1f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(item.second, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(item.first, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text(item.first, style = MaterialTheme.typography.titleLarge, fontSize = 13.sp)
                         }
                     }
                 }
@@ -433,17 +426,17 @@ fun RecentActivityItem(title: String, time: String, icon: ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF5F7FA)),
+                .background(Color(0xFFF1F5F9)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(18.dp))
+            Icon(icon, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(20.dp))
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(time, fontSize = 12.sp, color = SecondaryText)
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(time, style = MaterialTheme.typography.bodySmall, color = SecondaryText)
         }
     }
 }

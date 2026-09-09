@@ -15,12 +15,45 @@ data class NavItem(
 object AppNavigation {
     
     fun getBottomNavItems(role: UserRole): List<NavItem> {
-        return listOf(
-            NavItem("Home", Icons.Default.Dashboard, Route.Dashboard),
-            NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance),
-            NavItem("Exams", Icons.Default.Quiz, Route.Exams),
-            NavItem("Notices", Icons.Default.Campaign, Route.Notices)
-        )
+        val items = mutableListOf<NavItem>()
+        
+        when (role) {
+            UserRole.SUPER_ADMIN -> {
+                items.add(NavItem("Branches", Icons.Default.Business, Route.Dashboard))
+                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Reports", Icons.Default.Assessment, Route.Dashboard))
+            }
+            UserRole.BRANCH_ADMIN -> {
+                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+            }
+            UserRole.TEACHER -> {
+                items.add(NavItem("Home", Icons.Default.Dashboard, Route.Dashboard))
+                items.add(NavItem("Classes", Icons.Default.Class, Route.MyClasses))
+                items.add(NavItem("Attendance", Icons.Default.CheckCircle, Route.Attendance))
+                items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
+            }
+            UserRole.STAFF -> {
+                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
+            }
+            UserRole.ACCOUNTANT -> {
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Payments", Icons.Default.Receipt, Route.Fees))
+            }
+            UserRole.STUDENT -> {
+                items.add(NavItem("Home", Icons.Default.Dashboard, Route.Dashboard))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Results", Icons.Default.Grade, Route.Exams))
+            }
+            UserRole.PARENT -> {
+                items.add(NavItem("Children", Icons.Default.ChildCare, Route.Dashboard))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Notices", Icons.Default.Campaign, Route.Notices))
+            }
+        }
+        
+        return items
     }
 
     fun getDrawerItems(role: UserRole): List<NavItem> {
@@ -48,7 +81,6 @@ object AppNavigation {
         }
         
         items.add(NavItem("Notices", Icons.Default.Campaign, Route.Notices))
-        items.add(NavItem("Profile", Icons.Default.Person, Route.Profile))
         
         return items
     }

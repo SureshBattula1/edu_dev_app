@@ -10,22 +10,24 @@ import kotlinx.coroutines.withContext
 class StudentRepository {
     private val api = StudentApi()
 
-    suspend fun getStudents(query: String? = null): Result<List<Student>> = withContext(Dispatchers.IO) {
+    suspend fun getStudents(
+        query: String? = null,
+        grade: String? = null,
+        section: String? = null
+    ): Result<List<Student>> = withContext(Dispatchers.IO) {
         try {
             val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
-            val response = api.getStudents(token, query)
+            val response = api.getStudents(token, query, grade, section)
             Result.success(response.data)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun getStudentsByClass(classId: Int): Result<List<Student>> = withContext(Dispatchers.IO) {
+    suspend fun getStudentsByClass(grade: String, section: String): Result<List<Student>> = withContext(Dispatchers.IO) {
         try {
             val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
-            val response = api.getStudents(token, null) // In a real app, backend should support class_id filter
-            // For now, filter locally if backend doesn't support specific class endpoint
-            val filtered = response.data.filter { true } // Placeholder for filtering logic
+            val response = api.getStudents(token, null, grade, section)
             Result.success(response.data) 
         } catch (e: Exception) {
             Result.failure(e)

@@ -19,4 +19,14 @@ class ClassRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getBranchClasses(): Result<List<SchoolClass>> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getBranchClasses(token)
+            Result.success(response.data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

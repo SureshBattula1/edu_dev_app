@@ -9,7 +9,7 @@ class AssignmentApi {
     private val client = ApiClient.client
 
     suspend fun getAssignments(token: String): AssignmentResponse {
-        return client.get("assignments") {
+        return client.get(ApiConfig.ASSIGNMENTS) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
     }

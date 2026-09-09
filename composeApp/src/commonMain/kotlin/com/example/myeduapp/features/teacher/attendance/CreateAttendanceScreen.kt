@@ -136,7 +136,7 @@ fun MarkAttendanceStep(schoolClass: SchoolClass, date: String, onSuccess: () -> 
     val attendanceStates = remember { mutableStateMapOf<Int, String>() }
 
     LaunchedEffect(schoolClass.id) {
-        studentRepo.getStudentsByClass(schoolClass.id).onSuccess {
+        studentRepo.getStudentsByClass(schoolClass.name, schoolClass.section).onSuccess {
             students = it
             it.forEach { student -> attendanceStates[student.id] = "Present" }
             isLoading = false

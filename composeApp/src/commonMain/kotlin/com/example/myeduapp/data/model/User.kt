@@ -15,7 +15,20 @@ data class User(
     val company_id: Int? = null,
     val avatar: String? = null,
     val is_active: Boolean = true,
-    val permissions: List<String> = emptyList()
+    val permissions: List<String> = emptyList(),
+    
+    // Additional Profile Fields
+    val employee_id: String? = null,
+    val dob: String? = null,
+    val gender: String? = null,
+    val address: String? = null,
+    val designation: String? = null,
+    val department: String? = null,
+    val joining_date: String? = null,
+    val qualification: String? = null,
+    val experience: String? = null,
+    val subjects: List<String> = emptyList(),
+    val classes: List<String> = emptyList()
 ) {
     /** Full display name derived from first + last name (backend stores them separately). */
     val name: String

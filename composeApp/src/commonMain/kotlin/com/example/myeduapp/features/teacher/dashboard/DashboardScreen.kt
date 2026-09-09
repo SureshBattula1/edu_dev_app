@@ -4,9 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,7 +25,6 @@ import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.data.repository.DashboardRepository
 import com.example.myeduapp.data.model.DashboardResponse
-import com.example.myeduapp.data.model.DashboardEvent
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
@@ -36,6 +34,7 @@ import com.example.myeduapp.core.ui.theme.ErrorColor
 import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.NavItem
 import com.example.myeduapp.core.navigation.Route
+import com.example.myeduapp.core.ui.components.AppCard
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -64,48 +63,33 @@ fun DashboardScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("MyEduApp", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBlue)
-            )
-        }
-    ) { padding ->
+        containerColor = MaterialTheme.colorScheme.background
+    ) { _ ->
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = PrimaryBlue)
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 item {
-                    WelcomeSection(user.name, role)
+                    GenericHeroHeader(user.name, role, onMenuClick, onNotificationClick)
                 }
-                
+
                 item {
-                    StatsSection(role, dashboardData)
-                }
-                
-                item {
-                    QuickActionsGrid(role, onNavigate)
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        StatsSection(role, dashboardData)
+                        
+                        Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium)
+                        QuickActionsGrid(role, onNavigate)
+                    }
                 }
             }
         }
@@ -113,11 +97,70 @@ fun DashboardScreen(
 }
 
 @Composable
-fun WelcomeSection(name: String, role: UserRole) {
-    Column {
-        Text("Welcome back,", fontSize = 16.sp, color = SecondaryText)
-        Text(name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-        Text(role.name.replace("_", " "), fontSize = 14.sp, color = PrimaryBlue, fontWeight = FontWeight.Medium)
+fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onNotificationClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF007CC4), Color(0xFF299EF2))
+                )
+            )
+            .padding(horizontal = 24.dp)
+    ) {
+        Column(modifier = Modifier.statusBarsPadding()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onMenuClick,
+                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                }
+                
+                IconButton(
+                    onClick = onNotificationClick,
+                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Column {
+                Text(
+                    "WELCOME BACK,",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 11.sp
+                )
+                Text(
+                    name.uppercase(),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color.White,
+                    fontSize = 22.sp
+                )
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        role.name.replace("_", " "),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -125,40 +168,40 @@ fun WelcomeSection(name: String, role: UserRole) {
 fun StatsSection(role: UserRole, data: DashboardResponse?) {
     val stats = data?.data
     
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             when (role) {
                 UserRole.SUPER_ADMIN -> {
-                    StatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    StatCard("Branches", stats?.overview?.get("total_branches")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
+                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    DashboardStatCard("Branches", stats?.overview?.get("total_branches")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
                 }
                 UserRole.BRANCH_ADMIN -> {
-                    StatCard("Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    StatCard("Teachers", stats?.overview?.get("total_teachers")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
+                    DashboardStatCard("Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    DashboardStatCard("Teachers", stats?.overview?.get("total_teachers")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
                 }
                 UserRole.TEACHER -> {
-                    StatCard("My Classes", stats?.quick_stats?.get("classes")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    StatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
+                    DashboardStatCard("My Classes", stats?.quick_stats?.get("classes")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
                 }
                 UserRole.ACCOUNTANT -> {
-                    StatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", SuccessColor, Modifier.weight(1f))
-                    StatCard("Pending", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", SuccessColor, Modifier.weight(1f))
+                    DashboardStatCard("Pending", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
                 }
                 UserRole.STUDENT -> {
                     val attendance = stats?.attendance?.students?.percentage ?: 0f
-                    StatCard("Attendance", "${attendance.toInt()}%", if (attendance > 75) SuccessColor else ErrorColor, Modifier.weight(1f))
-                    StatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Attendance", "${attendance.toInt()}%", if (attendance > 75) SuccessColor else ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
                 }
                 UserRole.STAFF -> {
-                    StatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    StatCard("Today Presence", stats?.attendance?.teachers?.present_days?.toString() ?: "0", SuccessColor, Modifier.weight(1f))
+                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    DashboardStatCard("Today Presence", stats?.attendance?.teachers?.present_days?.toString() ?: "0", SuccessColor, Modifier.weight(1f))
                 }
                 UserRole.PARENT -> {
-                    StatCard("Children", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    StatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Children", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
                 }
             }
         }
@@ -166,19 +209,16 @@ fun StatsSection(role: UserRole, data: DashboardResponse?) {
 }
 
 @Composable
-fun StatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
+fun DashboardStatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
+    AppCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
         ) {
-            Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = color)
-            Text(label, fontSize = 12.sp, color = SecondaryText)
+            Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(value, style = MaterialTheme.typography.displayLarge, fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
+            Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = SecondaryText, fontSize = 10.sp, letterSpacing = 0.5.sp)
         }
     }
 }
@@ -187,14 +227,11 @@ fun StatCard(label: String, value: String, color: Color, modifier: Modifier = Mo
 fun QuickActionsGrid(role: UserRole, onNavigate: (String) -> Unit) {
     val items = AppNavigation.getDrawerItems(role).filter { it.route != Route.Dashboard && it.route != Route.Profile }
     
-    Column {
-        Text("Quick Actions", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
-        
-        // Using a simple Column/Row layout since LazyVerticalGrid inside LazyColumn is tricky
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         items.chunked(3).forEach { rowItems ->
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 rowItems.forEach { item ->
                     ActionCard(item, Modifier.weight(1f), onNavigate)
@@ -209,11 +246,8 @@ fun QuickActionsGrid(role: UserRole, onNavigate: (String) -> Unit) {
 
 @Composable
 fun ActionCard(item: NavItem, modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
-    Card(
-        modifier = modifier.clickable { onNavigate(item.route.path) },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(1.dp),
-        shape = RoundedCornerShape(12.dp)
+    AppCard(
+        modifier = modifier.clickable { onNavigate(item.route.path) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
@@ -227,10 +261,10 @@ fun ActionCard(item: NavItem, modifier: Modifier = Modifier, onNavigate: (String
                     .background(PrimaryBlue.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(item.icon, contentDescription = item.label, tint = PrimaryBlue)
+                Icon(item.icon, contentDescription = item.label, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(item.label, fontSize = 12.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
+            Text(item.label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
         }
     }
 }

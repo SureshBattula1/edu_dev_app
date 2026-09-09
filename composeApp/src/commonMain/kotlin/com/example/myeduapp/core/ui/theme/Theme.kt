@@ -13,57 +13,38 @@ import androidx.compose.ui.unit.dp
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,
     onPrimary = Color.White,
-    primaryContainer = PrimaryContainer,
-    onPrimaryContainer = OnPrimaryContainer,
-    secondary = DarkBlue,
+    primaryContainer = SecondaryBlue,
+    onPrimaryContainer = PrimaryBlue,
+    secondary = PrimaryLight,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE3F2FD),
-    onSecondaryContainer = Color(0xFF0D47A1),
-    tertiary = InfoColor,
-    onTertiary = Color.White,
+    secondaryContainer = SecondaryBlueVariant,
+    onSecondaryContainer = PrimaryBlue,
     background = Background,
     onBackground = PrimaryText,
     surface = CardBackground,
     onSurface = PrimaryText,
-    surfaceVariant = SurfaceVariant,
+    surfaceVariant = SecondaryBlue,
     onSurfaceVariant = SecondaryText,
     outline = OutlineSoft,
-    outlineVariant = Color(0xFFE8EDF4),
     error = ErrorColor,
-    onError = Color.White,
-    errorContainer = Color(0xFFFFEBEE),
-    onErrorContainer = Color(0xFFB71C1C)
+    onError = Color.White
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF7EC8E8),
-    onPrimary = Color(0xFF00344A),
-    primaryContainer = Color(0xFF087FBA),
-    onPrimaryContainer = Color(0xFFD6EFFA),
-    secondary = Color(0xFF90CAF9),
-    onSecondary = Color(0xFF0D47A1),
-    tertiary = Color(0xFF81D4FA),
-    onTertiary = Color(0xFF01579B),
-    background = Color(0xFF121212),
-    onBackground = Color(0xFFE8EAED),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE8EAED),
-    surfaceVariant = Color(0xFF2C2C2C),
-    onSurfaceVariant = Color(0xFFB0B3B8),
-    outline = Color(0xFF5F6368),
-    outlineVariant = Color(0xFF3C4043),
-    error = Color(0xFFEF9A9A),
-    onError = Color(0xFF5F1212),
-    errorContainer = Color(0xFF8E0000),
-    onErrorContainer = Color(0xFFFFEBEE)
+    primary = PrimaryLight,
+    onPrimary = Color.Black,
+    background = Color(0xFF0F172A),
+    surface = Color(0xFF1E293B),
+    onSurface = Color.White,
+    onBackground = Color.White
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(18.dp),
-    extraLarge = RoundedCornerShape(24.dp)
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(16.dp),
+    medium = RoundedCornerShape(20.dp), // Inner Action Buttons & Tabs
+    large = RoundedCornerShape(24.dp),  // Outer Cards
+    extraLarge = RoundedCornerShape(28.dp) // Floating Sheets
 )
 
 @Composable
@@ -82,7 +63,7 @@ fun MyEduAppTheme(
         CompositionLocalProvider(
             LocalDensity provides Density(
                 density = density.density,
-                fontScale = density.fontScale * 0.92f
+                fontScale = density.fontScale * 0.95f // Slightly reduced for Sunrise Academic style
             ),
             content = content
         )

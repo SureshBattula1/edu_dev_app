@@ -10,7 +10,7 @@ class TimetableApi {
     private val client = ApiClient.client
 
     suspend fun getTimetableByClass(token: String, grade: String, section: String): List<TimetableSlot> {
-        val response: TimetableResponse = client.get("timetables/class/$grade/$section") {
+        val response: TimetableResponse = client.get("${ApiConfig.TIMETABLES}/$grade/$section") {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
         return response.data

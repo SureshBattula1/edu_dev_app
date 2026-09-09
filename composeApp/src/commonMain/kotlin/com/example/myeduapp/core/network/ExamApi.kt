@@ -15,14 +15,14 @@ class ExamApi {
     private val client = ApiClient.client
 
     suspend fun getUpcomingExams(token: String): List<Exam> {
-        val response: ApiResponse<List<Exam>> = client.get("dashboard/upcoming-exams") {
+        val response: ApiResponse<List<Exam>> = client.get(ApiConfig.EXAMS_UPCOMING) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
         return response.data ?: emptyList()
     }
 
     suspend fun getStudentResults(token: String, studentId: Int): List<ExamResult> {
-        val response: ApiResponse<List<ExamResult>> = client.get("dashboard/student-results") {
+        val response: ApiResponse<List<ExamResult>> = client.get(ApiConfig.EXAMS_RESULTS) {
             parameter("student_id", studentId)
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()

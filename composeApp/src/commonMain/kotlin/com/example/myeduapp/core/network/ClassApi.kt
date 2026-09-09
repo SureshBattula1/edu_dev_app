@@ -9,7 +9,13 @@ class ClassApi {
     private val client = ApiClient.client
 
     suspend fun getMyClasses(token: String): ClassResponse {
-        return client.get("classes") {
+        return client.get(ApiConfig.CLASSES) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }.body()
+    }
+
+    suspend fun getBranchClasses(token: String): ClassResponse {
+        return client.get(ApiConfig.BRANCH_CLASSES) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
     }

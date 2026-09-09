@@ -1,5 +1,6 @@
 package com.example.myeduapp.features.teacher.dashboard
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -43,80 +46,141 @@ fun TeacherDashboardScreen(
 ) {
     AuthorizationWrapper(requiredRoles = listOf(UserRole.TEACHER)) {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text("MyEduApp", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onMenuClick) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+            containerColor = MaterialTheme.colorScheme.background
+        ) { _ ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+                // Sunrise Academic Hero Header
+                item {
+                    TeacherHeroHeader(user, onMenuClick, onNotificationClick)
+                }
+
+                item {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Summary Cards
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            AppStatCard("Total Classes", "6", PrimaryBlue, Modifier.weight(1f))
+                            AppStatCard("Total Students", "150", InfoColor, Modifier.weight(1f))
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = onNotificationClick) {
-                            BadgedBox(badge = { Badge { Text("3") } }) {
-                                Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            AppStatCard("Today's Classes", "4", SuccessColor, Modifier.weight(1f))
+                            AppStatCard("Attendance", "92%", WarningColor, Modifier.weight(1f))
+                        }
+
+                        // Quick Actions
+                        Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium)
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            QuickActionItem("Attendance", Icons.Default.CheckCircle, SuccessColor) { onNavigate(Route.Attendance.path) }
+                            QuickActionItem("Students", Icons.Default.Groups, InfoColor) { onNavigate("my_students") }
+                            QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, WarningColor) { onNavigate("assignments") }
+                            QuickActionItem("Exams", Icons.Default.Quiz, ErrorColor) { onNavigate(Route.Exams.path) }
+                        }
+
+                        // Today's Timetable Preview
+                        DashboardSectionHeader("TODAY'S TIMETABLE", "View All") { onNavigate(Route.Timetable.path) }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            TimetableMiniCard("09:00 AM", "Mathematics", "Class 10-A", "Room 102")
+                            TimetableMiniCard("11:30 AM", "Physics", "Class 12-B", "Lab 2")
+                        }
+
+                        // Upcoming
+                        Text("UPCOMING", style = MaterialTheme.typography.headlineMedium)
+                        AppCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                UpcomingItem("Mid-Term Exam", "Starts in 2 days", Icons.Default.Event, InfoColor)
+                                UpcomingItem("Math Assignment", "15 submissions pending", Icons.Default.Description, WarningColor)
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBlue, titleContentColor = Color.White)
-                )
+                    }
+                }
             }
-        ) { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+        }
+    }
+}
+
+@Composable
+fun TeacherHeroHeader(user: User, onMenuClick: () -> Unit, onNotificationClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color(0xFF007CC4), Color(0xFF299EF2))
+                )
+            )
+            .padding(horizontal = 24.dp)
+    ) {
+        Column(modifier = Modifier.statusBarsPadding()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Summary Cards
-                item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AppStatCard("Total Classes", "6", PrimaryBlue, Modifier.weight(1f))
-                        AppStatCard("Total Students", "150", InfoColor, Modifier.weight(1f))
-                    }
+                IconButton(
+                    onClick = onMenuClick,
+                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
                 }
-                item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        AppStatCard("Today's Classes", "4", SuccessColor, Modifier.weight(1f))
-                        AppStatCard("Attendance", "92%", WarningColor, Modifier.weight(1f))
-                    }
-                }
-
-                // Quick Actions
-                item {
-                    Text("Quick Actions", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        QuickActionItem("Attendance", Icons.Default.CheckCircle, SuccessColor) { onNavigate(Route.Attendance.path) }
-                        QuickActionItem("Students", Icons.Default.Groups, InfoColor) { onNavigate("my_students") }
-                        QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, WarningColor) { onNavigate("assignments") }
-                        QuickActionItem("Exams", Icons.Default.Quiz, ErrorColor) { onNavigate(Route.Exams.path) }
-                    }
+                
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text(
+                        "ACADEMIC YEAR 2025-26",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontSize = 10.sp
+                    )
                 }
 
-                // Today's Timetable Preview
-                item {
-                    DashboardSectionHeader("Today's Timetable", "View All") { onNavigate(Route.Timetable.path) }
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TimetableMiniCard("09:00 AM", "Mathematics", "Class 10-A", "Room 102")
-                        TimetableMiniCard("11:30 AM", "Physics", "Class 12-B", "Lab 2")
+                IconButton(
+                    onClick = onNotificationClick,
+                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                ) {
+                    BadgedBox(badge = { Badge { Text("3") } }) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
                     }
                 }
-
-                // Upcoming
-                item {
-                    Text("Upcoming", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    AppCard(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            UpcomingItem("Mid-Term Exam", "Starts in 2 days", Icons.Default.Event, InfoColor)
-                            UpcomingItem("Math Assignment", "15 submissions pending", Icons.Default.Description, WarningColor)
-                        }
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(60.dp).background(Color.White.copy(alpha = 0.2f), CircleShape).padding(2.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
                     }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        "WELCOME BACK,",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        user.name.uppercase(),
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        fontSize = 22.sp
+                    )
                 }
             }
         }
@@ -126,29 +190,37 @@ fun TeacherDashboardScreen(
 @Composable
 fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IconButton(
+        Surface(
             onClick = onClick,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(color.copy(alpha = 0.1f))
+            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = color.copy(alpha = 0.1f),
+            border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
         ) {
-            Icon(icon, contentDescription = label, tint = color)
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(28.dp))
+            }
         }
-        Text(label, fontSize = 12.sp, color = SecondaryText, modifier = Modifier.padding(top = 4.dp))
+        Text(
+            label, 
+            style = MaterialTheme.typography.bodySmall, 
+            color = SecondaryText, 
+            modifier = Modifier.padding(top = 8.dp),
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
 @Composable
 fun DashboardSectionHeader(title: String, actionText: String, onActionClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.headlineMedium)
         TextButton(onClick = onActionClick) {
-            Text(actionText, color = PrimaryBlue)
+            Text(actionText, color = PrimaryBlue, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -156,14 +228,16 @@ fun DashboardSectionHeader(title: String, actionText: String, onActionClick: () 
 @Composable
 fun TimetableMiniCard(time: String, subject: String, className: String, room: String) {
     AppCard(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(time, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
-            Spacer(modifier = Modifier.width(16.dp))
-            Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.LightGray))
-            Spacer(modifier = Modifier.width(16.dp))
+        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(time, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)))
+            Spacer(modifier = Modifier.width(20.dp))
             Column {
-                Text(subject, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                Text("$className • $room", fontSize = 12.sp, color = SecondaryText)
+                Text(subject, style = MaterialTheme.typography.titleLarge)
+                Text("$className • $room", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
             }
         }
     }
@@ -172,11 +246,19 @@ fun TimetableMiniCard(time: String, subject: String, className: String, room: St
 @Composable
 fun UpcomingItem(title: String, subtitle: String, icon: ImageVector, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(12.dp))
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = color.copy(alpha = 0.1f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, fontSize = 12.sp, color = SecondaryText)
+            Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 14.sp)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = SecondaryText)
         }
     }
 }

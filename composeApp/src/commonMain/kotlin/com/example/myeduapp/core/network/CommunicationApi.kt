@@ -26,7 +26,7 @@ class CommunicationApi {
     }
 
     suspend fun getHolidays(token: String): List<Holiday> {
-        val response: ApiResponse<List<Holiday>> = client.get("holidays/upcoming") {
+        val response: ApiResponse<List<Holiday>> = client.get(ApiConfig.HOLIDAYS) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
         return response.data ?: emptyList()

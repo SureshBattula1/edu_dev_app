@@ -26,6 +26,8 @@ import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.features.teacher.student360.Student360Screen
 import com.example.myeduapp.data.model.Student
+import com.example.myeduapp.data.model.SchoolClass
+import com.example.myeduapp.data.repository.ClassRepository
 import com.example.myeduapp.data.repository.StudentRepository
 import kotlinx.coroutines.delay
 
@@ -34,18 +36,48 @@ class MyStudentsScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val repository = remember { StudentRepository() }
+        val classRepository = remember { ClassRepository() }
+        
         var students by remember { mutableStateOf<List<Student>>(emptyList()) }
+        var classes by remember { mutableStateOf<List<SchoolClass>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
+        
         var searchQuery by remember { mutableStateOf("") }
+        var selectedGrade by remember { mutableStateOf<String?>(null) }
+        var selectedSection by remember { mutableStateOf<String?>(null) }
 
-        LaunchedEffect(searchQuery) {
+        // Fetch all classes in the branch for dynamic filters
+        LaunchedEffect(Unit) {
+            classRepository.getBranchClasses().onSuccess {
+                classes = it
+            }
+        }
+
+        // Fetch students when filters change
+        LaunchedEffect(searchQuery, selectedGrade, selectedSection) {
             if (searchQuery.length >= 2 || searchQuery.isEmpty()) {
                 isLoading = true
                 if (searchQuery.isNotEmpty()) delay(500) // Debounce
-                repository.getStudents(searchQuery).onSuccess {
+                repository.getStudents(
+                    query = searchQuery.ifBlank { null },
+                    grade = selectedGrade,
+                    section = selectedSection
+                ).onSuccess {
                     students = it
                 }
                 isLoading = false
+            }
+        }
+
+        val availableGrades = remember(classes) {
+            classes.map { it.name }.distinct().sorted()
+        }
+        
+        val availableSections = remember(classes, selectedGrade) {
+            if (selectedGrade == null) {
+                classes.map { it.section }.distinct().sorted()
+            } else {
+                classes.filter { it.name == selectedGrade }.map { it.section }.distinct().sorted()
             }
         }
 
@@ -55,11 +87,12 @@ class MyStudentsScreen : Screen {
             }
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                // Search Bar
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    placeholder = { Text("Search by name, roll no, adm no...") },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Search by name, roll no...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -71,13 +104,56 @@ class MyStudentsScreen : Screen {
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                // Filters Row
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterDropdown(
+                        label = "Class",
+                        options = availableGrades,
+                        selectedOption = selectedGrade,
+                        onOptionSelected = { 
+                            selectedGrade = it
+                            selectedSection = null // Reset section when class changes
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    FilterDropdown(
+                        label = "Section",
+                        options = availableSections,
+                        selectedOption = selectedSection,
+                        onOptionSelected = { selectedSection = it },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    if (selectedGrade != null || selectedSection != null) {
+                        IconButton(
+                            onClick = {
+                                selectedGrade = null
+                                selectedSection = null
+                            },
+                            modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Clear Filters", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = PrimaryBlue)
                     }
-                } else if (students.isEmpty() && searchQuery.isNotEmpty()) {
+                } else if (students.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No students found matching '$searchQuery'", color = SecondaryText)
+                        Text(
+                            if (searchQuery.isNotEmpty() || selectedGrade != null || selectedSection != null) 
+                                "No students found with current filters" 
+                            else "No students available", 
+                            color = SecondaryText
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -87,11 +163,67 @@ class MyStudentsScreen : Screen {
                     ) {
                         items(students) { student ->
                             StudentCard(student) {
-                                // Navigate to Student 360
+                                navigator.push(Student360Screen(student))
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterDropdown(
+    label: String,
+    options: List<String>,
+    selectedOption: String?,
+    onOptionSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedOption ?: "All $label",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label, style = MaterialTheme.typography.labelMedium) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
+                focusedBorderColor = PrimaryBlue,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+            ),
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            shape = RoundedCornerShape(12.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White)
+        ) {
+            DropdownMenuItem(
+                text = { Text("All $label", style = MaterialTheme.typography.bodyMedium) },
+                onClick = {
+                    onOptionSelected(null)
+                    expanded = false
+                }
+            )
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option, style = MaterialTheme.typography.bodyMedium) },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
             }
         }
     }
