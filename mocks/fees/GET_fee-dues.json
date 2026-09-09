@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "fee_type": "Tuition Fee – Sep 2026",
+      "amount": 4500.0,
+      "due_date": "2026-09-10",
+      "status": "Pending"
+    },
+    {
+      "id": 2,
+      "fee_type": "Transport Fee – Sep 2026",
+      "amount": 1200.0,
+      "due_date": "2026-09-10",
+      "status": "Pending"
+    },
+    {
+      "id": 3,
+      "fee_type": "Lab Fee",
+      "amount": 800.0,
+      "due_date": "2026-09-15",
+      "status": "Partially Paid"
+    }
+  ]
+}

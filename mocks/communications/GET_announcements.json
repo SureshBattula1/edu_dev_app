@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "Half-yearly exam timetable released",
+      "content": "Please check the notice board and portal for the full schedule.",
+      "author": "Principal",
+      "published_at": "2026-09-05T09:00:00.000000Z"
+    },
+    {
+      "id": 2,
+      "title": "Independence Day celebration photos",
+      "content": "Photos from the school celebration are now available in the gallery.",
+      "author": "Admin",
+      "published_at": "2026-08-16T14:30:00.000000Z"
+    }
+  ]
+}

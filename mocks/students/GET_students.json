@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "user_id": 101,
+      "first_name": "Rahul",
+      "last_name": "Kumar",
+      "admission_number": "ADM2024001",
+      "roll_number": "1",
+      "grade": "10",
+      "section": "A",
+      "avatar": null
+    },
+    {
+      "id": 2,
+      "user_id": 102,
+      "first_name": "Ananya",
+      "last_name": "Singh",
+      "admission_number": "ADM2024002",
+      "roll_number": "2",
+      "grade": "10",
+      "section": "A",
+      "avatar": null
+    },
+    {
+      "id": 3,
+      "user_id": 103,
+      "first_name": "Vikram",
+      "last_name": "Patel",
+      "admission_number": "ADM2024003",
+      "roll_number": "3",
+      "grade": "10",
+      "section": "A",
+      "avatar": null
+    },
+    {
+      "id": 4,
+      "user_id": 104,
+      "first_name": "Meera",
+      "last_name": "Nair",
+      "admission_number": "ADM2024004",
+      "roll_number": "4",
+      "grade": "9",
+      "section": "B",
+      "avatar": null
+    },
+    {
+      "id": 5,
+      "user_id": 105,
+      "first_name": "Arjun",
+      "last_name": "Reddy",
+      "admission_number": "ADM2024005",
+      "roll_number": "5",
+      "grade": "9",
+      "section": "B",
+      "avatar": null
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "data": {
+    "overview": {
+      "total_students": 128,
+      "total_teachers": 18,
+      "total_branches": 2
+    },
+    "attendance": {
+      "students": {
+        "total_days": 20,
+        "present_days": 17,
+        "absent_days": 2,
+        "late_days": 1,
+        "leave_days": 0,
+        "percentage": 85.0
+      },
+      "teachers": {
+        "total_days": 20,
+        "present_days": 19,
+        "absent_days": 1,
+        "late_days": 0,
+        "leave_days": 0,
+        "percentage": 95.0
+      }
+    },
+    "fees": {
+      "collected": 245000,
+      "pending": 38500
+    },
+    "quick_stats": {
+      "classes": 4,
+      "students": 128,
+      "assignments": 6
+    },
+    "financial": {
+      "revenue_mtd": 245000,
+      "expenses_mtd": 82000
+    },
+    "upcoming_events": [
+      { "title": "Unit Test 2", "date": "2026-09-15", "type": "exam" },
+      { "title": "Parent-Teacher Meeting", "date": "2026-09-20", "type": "meeting" },
+      { "title": "Sports Day", "date": "2026-09-28", "type": "event" }
+    ]
+  }
+}

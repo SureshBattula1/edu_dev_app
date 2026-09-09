@@ -1,0 +1,19 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "amount_paid": 4500.0,
+      "payment_date": "2026-08-05",
+      "payment_method": "UPI",
+      "receipt_number": "RCP-2026-0801"
+    },
+    {
+      "id": 2,
+      "amount_paid": 1200.0,
+      "payment_date": "2026-08-05",
+      "payment_method": "Cash",
+      "receipt_number": "RCP-2026-0802"
+    }
+  ]
+}

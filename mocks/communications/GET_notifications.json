@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": "n1",
+      "title": "Attendance reminder",
+      "message": "Please mark attendance for Class 10-A today.",
+      "type": "attendance",
+      "date": "2026-09-08",
+      "is_read": false
+    },
+    {
+      "id": "n2",
+      "title": "New assignment due",
+      "message": "Quadratic Equations Worksheet is due on 12 Sep.",
+      "type": "assignment",
+      "date": "2026-09-07",
+      "is_read": true
+    },
+    {
+      "id": "n3",
+      "title": "PTM scheduled",
+      "message": "Parent-Teacher Meeting on 20 Sep at 10:00 AM.",
+      "type": "event",
+      "date": "2026-09-06",
+      "is_read": false
+    }
+  ]
+}

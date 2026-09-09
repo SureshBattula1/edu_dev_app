@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "data": {
+    "total_days": 20,
+    "present_days": 16,
+    "absent_days": 2,
+    "late_days": 2,
+    "leave_days": 0,
+    "percentage": 80.0
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "10",
+      "section": "A",
+      "subject": "Mathematics",
+      "student_count": 32,
+      "academic_year": "2025-26",
+      "schedule": "Mon–Fri 09:00",
+      "room": "Room 201"
+    },
+    {
+      "id": 2,
+      "name": "10",
+      "section": "B",
+      "subject": "Science",
+      "student_count": 30,
+      "academic_year": "2025-26",
+      "schedule": "Mon–Fri 10:00",
+      "room": "Room 202"
+    },
+    {
+      "id": 3,
+      "name": "9",
+      "section": "A",
+      "subject": "English",
+      "student_count": 28,
+      "academic_year": "2025-26",
+      "schedule": "Tue–Sat 09:00",
+      "room": "Room 105"
+    },
+    {
+      "id": 4,
+      "name": "9",
+      "section": "B",
+      "subject": "Mathematics",
+      "student_count": 29,
+      "academic_year": "2025-26",
+      "schedule": "Mon–Fri 11:00",
+      "room": "Room 106"
+    }
+  ]
+}

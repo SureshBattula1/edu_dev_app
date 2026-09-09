@@ -1,0 +1,53 @@
+{
+  "success": true,
+  "date": "2026-09-08",
+  "class_name": "10",
+  "section": "A",
+  "attendance": [
+    {
+      "id": 1,
+      "student_id": 1,
+      "student_name": "Rahul Kumar",
+      "roll_number": "1",
+      "date": "2026-09-08",
+      "status": "Present",
+      "remarks": null
+    },
+    {
+      "id": 2,
+      "student_id": 2,
+      "student_name": "Ananya Singh",
+      "roll_number": "2",
+      "date": "2026-09-08",
+      "status": "Present",
+      "remarks": null
+    },
+    {
+      "id": 3,
+      "student_id": 3,
+      "student_name": "Vikram Patel",
+      "roll_number": "3",
+      "date": "2026-09-08",
+      "status": "Absent",
+      "remarks": "Sick"
+    },
+    {
+      "id": 4,
+      "student_id": 4,
+      "student_name": "Meera Nair",
+      "roll_number": "4",
+      "date": "2026-09-08",
+      "status": "Late",
+      "remarks": null
+    },
+    {
+      "id": 5,
+      "student_id": 5,
+      "student_name": "Arjun Reddy",
+      "roll_number": "5",
+      "date": "2026-09-08",
+      "status": "Present",
+      "remarks": null
+    }
+  ]
+}

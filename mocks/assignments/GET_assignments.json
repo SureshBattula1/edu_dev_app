@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "title": "Quadratic Equations Worksheet",
+      "description": "Solve problems 1–20 from chapter 4",
+      "class_name": "10",
+      "section": "A",
+      "subject": "Mathematics",
+      "due_date": "2026-09-12",
+      "submission_count": 18,
+      "status": "Active"
+    },
+    {
+      "id": 2,
+      "title": "Lab Report – Acids & Bases",
+      "description": "Write a full lab report with observations",
+      "class_name": "10",
+      "section": "B",
+      "subject": "Science",
+      "due_date": "2026-09-14",
+      "submission_count": 12,
+      "status": "Active"
+    },
+    {
+      "id": 3,
+      "title": "Essay – Climate Change",
+      "description": "800-word essay with sources",
+      "class_name": "9",
+      "section": "A",
+      "subject": "English",
+      "due_date": "2026-09-18",
+      "submission_count": 8,
+      "status": "Active"
+    }
+  ]
+}

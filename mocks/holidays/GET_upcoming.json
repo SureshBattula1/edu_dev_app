@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Ganesh Chaturthi",
+      "date": "2026-09-14",
+      "end_date": null,
+      "description": "Public holiday"
+    },
+    {
+      "id": 2,
+      "name": "Gandhi Jayanti",
+      "date": "2026-10-02",
+      "end_date": null,
+      "description": "National holiday"
+    },
+    {
+      "id": 3,
+      "name": "Diwali Break",
+      "date": "2026-11-08",
+      "end_date": "2026-11-12",
+      "description": "School closed for Diwali"
+    }
+  ]
+}

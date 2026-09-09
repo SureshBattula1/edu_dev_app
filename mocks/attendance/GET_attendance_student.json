@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "data": [
+    { "id": 11, "student_id": 1, "date": "2026-09-08", "status": "Present", "remarks": null },
+    { "id": 12, "student_id": 1, "date": "2026-09-07", "status": "Present", "remarks": null },
+    { "id": 13, "student_id": 1, "date": "2026-09-06", "status": "Late", "remarks": "Bus delay" },
+    { "id": 14, "student_id": 1, "date": "2026-09-05", "status": "Absent", "remarks": null },
+    { "id": 15, "student_id": 1, "date": "2026-09-04", "status": "Present", "remarks": null }
+  ]
+}

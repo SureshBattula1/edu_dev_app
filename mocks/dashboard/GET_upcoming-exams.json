@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Unit Test 2 – Mathematics",
+      "date": "2026-09-15",
+      "time": "09:00",
+      "type": "Unit Test",
+      "subject": "Mathematics"
+    },
+    {
+      "id": 2,
+      "name": "Unit Test 2 – Science",
+      "date": "2026-09-16",
+      "time": "09:00",
+      "type": "Unit Test",
+      "subject": "Science"
+    },
+    {
+      "id": 3,
+      "name": "Half Yearly – English",
+      "date": "2026-10-05",
+      "time": "10:00",
+      "type": "Half Yearly",
+      "subject": "English"
+    }
+  ]
+}

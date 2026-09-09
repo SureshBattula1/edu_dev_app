@@ -1,0 +1,21 @@
+{
+  "success": true,
+  "message": "Profile updated",
+  "user": {
+    "id": 1,
+    "first_name": "Priya",
+    "last_name": "Sharma",
+    "email": "teacher@school.com",
+    "phone": "9876543210",
+    "role": "Teacher",
+    "branch_id": 1,
+    "school_id": 1,
+    "company_id": 1,
+    "avatar": null,
+    "is_active": true,
+    "permissions": ["dashboard.view", "attendance.manage", "students.view"]
+  },
+  "access_token": "mock-access-token-teacher-001",
+  "token_type": "Bearer",
+  "expires_in": "30 days"
+}
