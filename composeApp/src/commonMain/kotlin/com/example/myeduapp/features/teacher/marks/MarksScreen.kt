@@ -102,13 +102,13 @@ fun EnterMarksStep(examName: String, className: String, onSuccess: () -> Unit) {
     // Mock students
     val students = remember {
         listOf(
-            Student(1, 101, "Rahul", "Kumar", "ADM001", "1"),
-            Student(2, 102, "Suresh", "Reddy", "ADM002", "2"),
-            Student(3, 103, "Anil", "Kumar", "ADM003", "3")
+            Student("1", "101", "Rahul", "Kumar", "ADM001", "1"),
+            Student("2", "102", "Suresh", "Reddy", "ADM002", "2"),
+            Student("3", "103", "Anil", "Kumar", "ADM003", "3")
         )
     }
     
-    val marksStates = remember { mutableStateMapOf<Int, String>() }
+    val marksStates = remember { mutableStateMapOf<String, String>() }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxWidth().background(PrimaryBlue.copy(alpha = 0.05f)).padding(16.dp)) {

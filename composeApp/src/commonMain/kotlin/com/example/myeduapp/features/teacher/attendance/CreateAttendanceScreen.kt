@@ -1,6 +1,5 @@
 package com.example.myeduapp.features.teacher.attendance
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,14 +7,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,46 +21,57 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppButton
+import com.example.myeduapp.core.ui.theme.AttendanceDimens
+import com.example.myeduapp.core.ui.theme.Background
+import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.core.ui.theme.SuccessColor
-import com.example.myeduapp.core.ui.theme.ErrorColor
-import com.example.myeduapp.data.model.Student
-import com.example.myeduapp.data.model.SchoolClass
+import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Attendance
-import com.example.myeduapp.data.repository.ClassRepository
-import com.example.myeduapp.data.repository.StudentRepository
+import com.example.myeduapp.data.model.SchoolClass
+import com.example.myeduapp.data.model.Student
 import com.example.myeduapp.data.repository.AttendanceRepository
+import com.example.myeduapp.data.repository.StudentRepository
+import com.example.myeduapp.features.attendance.AttendanceFiltersPanel
+import com.example.myeduapp.features.attendance.AttendanceSectionHeader
+import com.example.myeduapp.features.attendance.AttendanceStatusGrid
+import com.example.myeduapp.features.attendance.EmptyAttendanceState
+import com.example.myeduapp.features.attendance.rememberAttendanceClassSectionFilters
 import kotlinx.coroutines.launch
 
 class CreateAttendanceScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        var step by remember { mutableStateOf(1) }
-        var selectedClass by remember { mutableStateOf<SchoolClass?>(null) }
-        var selectedDate by remember { mutableStateOf("2026-09-08") } // Mock today
-        
+        val filterState = rememberAttendanceClassSectionFilters()
+        var selectedDate by remember { mutableStateOf(DateUtils.today()) }
+
         Scaffold(
+            containerColor = Background,
             topBar = {
-                AppBackTopBar(
-                    title = if (step == 1) "Select Class" else "Mark Attendance",
-                    onBack = { if (step > 1) step-- else navigator.pop() }
-                )
+                AppBackTopBar(title = "Mark Attendance", onBack = { navigator.pop() })
             }
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                if (step == 1) {
-                    ClassSelectionStep(onNext = { schoolClass ->
-                        selectedClass = schoolClass
-                        step = 2
-                    })
+                AttendanceFiltersPanel(
+                    state = filterState,
+                    selectedDate = selectedDate,
+                    onDateChange = { selectedDate = it }
+                )
+
+                if (!filterState.isReady) {
+                    EmptyAttendanceState(
+                        title = "Select class & section",
+                        message = "Choose a class and section above to load students.",
+                        modifier = Modifier.fillMaxSize()
+                    )
                 } else {
-                    selectedClass?.let { schoolClass ->
+                    filterState.selectedClass?.let { schoolClass ->
                         MarkAttendanceStep(
                             schoolClass = schoolClass,
                             date = selectedDate,
-                            onSuccess = { navigator.pop() }
+                            onSuccess = { navigator.pop() },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -72,132 +80,217 @@ class CreateAttendanceScreen : Screen {
     }
 }
 
-@Composable
-fun ClassSelectionStep(onNext: (SchoolClass) -> Unit) {
-    val repository = remember { ClassRepository() }
-    var classes by remember { mutableStateOf<List<SchoolClass>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+private fun Student.matchesAttendanceUser(userId: String): Boolean =
+    attendanceUserId == userId || user_id == userId || id == userId
 
-    LaunchedEffect(Unit) {
-        repository.getMyClasses().onSuccess {
-            classes = it
-            isLoading = false
-        }.onFailure {
-            isLoading = false
+private fun applyExistingAttendance(
+    students: List<Student>,
+    existing: List<Attendance>,
+    attendanceStates: MutableMap<String, String>,
+    remarksStates: MutableMap<String, String>
+): Boolean {
+    var applied = false
+    existing.forEach { record ->
+        val userId = record.student_id?.takeIf { it.isNotBlank() && it != "0" } ?: return@forEach
+        val student = students.find { it.matchesAttendanceUser(userId) }
+        val key = student?.attendanceUserId ?: userId
+        attendanceStates[key] = record.status
+        remarksStates[key] = record.remarks ?: ""
+        applied = true
+    }
+    return applied
+}
+
+@Composable
+fun MarkAttendanceStep(
+    schoolClass: SchoolClass,
+    date: String,
+    onSuccess: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val studentRepo = remember { StudentRepository() }
+    val attendanceRepo = remember { AttendanceRepository() }
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
+
+    var students by remember { mutableStateOf<List<Student>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isSubmitting by remember { mutableStateOf(false) }
+    var isUpdateMode by remember { mutableStateOf(false) }
+    val attendanceStates = remember { mutableStateMapOf<String, String>() }
+    val remarksStates = remember { mutableStateMapOf<String, String>() }
+    val statuses = listOf("Present", "Absent", "Late", "Half-Day", "Sick Leave")
+
+    LaunchedEffect(schoolClass.displayGrade, schoolClass.section, date) {
+        isLoading = true
+        isUpdateMode = false
+        attendanceStates.clear()
+        remarksStates.clear()
+
+        val list = studentRepo.getStudentsByClass(schoolClass.displayGrade, schoolClass.section)
+            .getOrElse { emptyList() }
+        students = list
+
+        list.forEach { student ->
+            val key = student.attendanceUserId
+            attendanceStates[key] = "Present"
+            remarksStates[key] = ""
         }
+
+        if (list.isNotEmpty()) {
+            attendanceRepo.getClassAttendance(schoolClass, date).onSuccess { result ->
+                if (result.attendance.isNotEmpty()) {
+                    isUpdateMode = applyExistingAttendance(
+                        students = list,
+                        existing = result.attendance,
+                        attendanceStates = attendanceStates,
+                        remarksStates = remarksStates
+                    )
+                }
+            }
+        }
+
+        isLoading = false
     }
 
-    if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = PrimaryBlue)
-        }
-    } else if (classes.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No classes assigned to you.")
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Text("Select a class to take attendance", fontSize = 16.sp, color = SecondaryText)
+    Box(modifier = modifier.fillMaxSize()) {
+        when {
+            isLoading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PrimaryBlue)
+                }
             }
-            items(classes) { schoolClass ->
-                Card(
-                    onClick = { onNext(schoolClass) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(1.dp)
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(schoolClass.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            Text("Section: ${schoolClass.section} • Subject: ${schoolClass.subject ?: "N/A"}", color = SecondaryText, fontSize = 14.sp)
+            students.isEmpty() -> {
+                EmptyAttendanceState(
+                    title = "No students found",
+                    message = "No active students in ${schoolClass.displayName}.",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    AttendanceSectionHeader(
+                        title = schoolClass.displayName,
+                        subtitle = "${students.size} students • ${DateUtils.formatDisplay(date)}",
+                        action = {
+                            BulkStatusDropdown(
+                                statuses = statuses,
+                                onApplyToAll = { status ->
+                                    students.forEach { attendanceStates[it.attendanceUserId] = status }
+                                }
+                            )
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(
+                            horizontal = AttendanceDimens.ScreenHorizontal,
+                            vertical = 4.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(AttendanceDimens.ListSpacing)
+                    ) {
+                        items(students, key = { it.attendanceUserId }) { student ->
+                            val userKey = student.attendanceUserId
+                            AttendanceMarkRow(
+                                student = student,
+                                status = attendanceStates[userKey] ?: "Present",
+                                remarks = remarksStates[userKey] ?: "",
+                                statuses = statuses,
+                                onStatusChange = { attendanceStates[userKey] = it },
+                                onRemarksChange = { remarksStates[userKey] = it }
+                            )
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        tonalElevation = 6.dp,
+                        shadowElevation = 4.dp,
+                        color = CardBackground
+                    ) {
+                        AppButton(
+                            text = when {
+                                isSubmitting && isUpdateMode -> "Updating..."
+                                isSubmitting -> "Submitting..."
+                                isUpdateMode -> "Update Attendance"
+                                else -> "Submit Attendance"
+                            },
+                            onClick = {
+                                if (isSubmitting) return@AppButton
+                                isSubmitting = true
+                                scope.launch {
+                                    attendanceRepo.submitStudentAttendance(
+                                        schoolClass = schoolClass,
+                                        date = date,
+                                        students = students,
+                                        statusByUserId = attendanceStates.toMap(),
+                                        remarksByUserId = remarksStates.toMap(),
+                                        isUpdate = isUpdateMode
+                                    ).onSuccess {
+                                        snackbar.showSnackbar(it)
+                                        onSuccess()
+                                    }.onFailure {
+                                        snackbar.showSnackbar(it.message ?: "Failed to save")
+                                    }
+                                    isSubmitting = false
+                                }
+                            },
+                            modifier = Modifier
+                                .padding(
+                                    horizontal = AttendanceDimens.ScreenHorizontal,
+                                    vertical = 12.dp
+                                )
+                                .fillMaxWidth()
+                        )
                     }
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarkAttendanceStep(schoolClass: SchoolClass, date: String, onSuccess: () -> Unit) {
-    val studentRepo = remember { StudentRepository() }
-    val attendanceRepo = remember { AttendanceRepository() }
-    val scope = rememberCoroutineScope()
-    
-    var students by remember { mutableStateOf<List<Student>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    val attendanceStates = remember { mutableStateMapOf<Int, String>() }
+fun BulkStatusDropdown(
+    statuses: List<String>,
+    onApplyToAll: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val bulkOptions = listOf("All Present", "All Absent", "All Late", "All Half-Day", "All Sick Leave")
 
-    LaunchedEffect(schoolClass.id) {
-        studentRepo.getStudentsByClass(schoolClass.name, schoolClass.section).onSuccess {
-            students = it
-            it.forEach { student -> attendanceStates[student.id] = "Present" }
-            isLoading = false
-        }.onFailure {
-            isLoading = false
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text("Mark All", fontSize = 13.sp)
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
         }
-    }
-
-    if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = PrimaryBlue)
-        }
-    } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("${schoolClass.name} - ${schoolClass.section}", fontWeight = FontWeight.Bold)
-                    Text("Date: $date", fontSize = 14.sp, color = SecondaryText)
-                }
-                TextButton(onClick = { students.forEach { attendanceStates[it.id] = "Present" } }) {
-                    Text("All Present")
-                }
-            }
-            
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(students) { student ->
-                    val status = attendanceStates[student.id] ?: "Present"
-                    AttendanceMarkRow(
-                        student = student,
-                        status = status,
-                        onStatusChange = { attendanceStates[student.id] = it }
-                    )
-                }
-            }
-            
-            Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 8.dp) {
-                AppButton(
-                    text = "Submit Attendance",
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            bulkOptions.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
                     onClick = {
-                        scope.launch {
-                            val records = students.map {
-                                Attendance(
-                                    student_id = it.id,
-                                    date = date,
-                                    status = attendanceStates[it.id] ?: "Present"
-                                )
-                            }
-                            attendanceRepo.submitAttendance(schoolClass.id, date, records).onSuccess {
-                                onSuccess()
-                            }
+                        val status = option.removePrefix("All ").trim()
+                        if (statuses.contains(status)) {
+                            onApplyToAll(status)
                         }
-                    },
-                    modifier = Modifier.padding(16.dp).fillMaxWidth()
+                        expanded = false
+                    }
                 )
             }
         }
@@ -205,49 +298,75 @@ fun MarkAttendanceStep(schoolClass: SchoolClass, date: String, onSuccess: () -> 
 }
 
 @Composable
-fun AttendanceMarkRow(student: Student, status: String, onStatusChange: (String) -> Unit) {
+fun AttendanceMarkRow(
+    student: Student,
+    status: String,
+    remarks: String,
+    statuses: List<String>,
+    onStatusChange: (String) -> Unit,
+    onRemarksChange: (String) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(AttendanceDimens.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(AttendanceDimens.ItemSpacing)
         ) {
-            Box(
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(PrimaryBlue.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(student.roll_number ?: "?", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(AttendanceDimens.AvatarSize)
+                        .clip(CircleShape)
+                        .background(PrimaryBlue.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        student.roll_number ?: "?",
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue,
+                        fontSize = 13.sp
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        student.full_name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
+                    )
+                    Text(
+                        "Roll ${student.roll_number ?: "—"}",
+                        fontSize = 12.sp,
+                        color = SecondaryText
+                    )
+                }
             }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Text(student.full_name, modifier = Modifier.weight(1f), fontSize = 15.sp)
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallStatusButton("P", status == "Present", SuccessColor) { onStatusChange("Present") }
-                SmallStatusButton("A", status == "Absent", ErrorColor) { onStatusChange("Absent") }
-            }
-        }
-    }
-}
 
-@Composable
-fun SmallStatusButton(text: String, isSelected: Boolean, color: Color, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = Modifier.size(36.dp),
-        shape = CircleShape,
-        contentPadding = PaddingValues(0.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (isSelected) color else Color.Transparent,
-            contentColor = if (isSelected) Color.White else color
-        ),
-        border = BorderStroke(1.dp, color)
-    ) {
-        Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            AttendanceStatusGrid(
+                statuses = statuses,
+                selected = status,
+                onSelected = onStatusChange
+            )
+
+            OutlinedTextField(
+                value = remarks,
+                onValueChange = onRemarksChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Remarks / Note") },
+                placeholder = { Text("Optional note for this student") },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Background,
+                    focusedContainerColor = Background,
+                    focusedBorderColor = PrimaryBlue
+                )
+            )
+        }
     }
 }

@@ -20,15 +20,20 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
+import com.example.myeduapp.core.ui.components.ClearFiltersButton
+import com.example.myeduapp.core.ui.components.FilterOptionDropdown
+import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.features.teacher.student360.Student360Screen
+import com.example.myeduapp.data.model.FilterOption
+import com.example.myeduapp.data.model.GradeOption
 import com.example.myeduapp.data.model.Student
-import com.example.myeduapp.data.model.SchoolClass
 import com.example.myeduapp.data.repository.ClassRepository
 import com.example.myeduapp.data.repository.StudentRepository
+import com.example.myeduapp.features.teacher.student360.Student360Screen
 import kotlinx.coroutines.delay
 
 class MyStudentsScreen : Screen {
@@ -37,49 +42,62 @@ class MyStudentsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val repository = remember { StudentRepository() }
         val classRepository = remember { ClassRepository() }
-        
+        val academicYearFilter = rememberAcademicYearFilter()
+
         var students by remember { mutableStateOf<List<Student>>(emptyList()) }
-        var classes by remember { mutableStateOf<List<SchoolClass>>(emptyList()) }
+        var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
+        var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
-        
+
         var searchQuery by remember { mutableStateOf("") }
         var selectedGrade by remember { mutableStateOf<String?>(null) }
         var selectedSection by remember { mutableStateOf<String?>(null) }
 
-        // Fetch all classes in the branch for dynamic filters
-        LaunchedEffect(Unit) {
-            classRepository.getBranchClasses().onSuccess {
-                classes = it
-            }
+        val gradeOptions = remember(grades) {
+            grades.map { FilterOption(value = it.value, label = it.label) }
         }
 
-        // Fetch students when filters change
-        LaunchedEffect(searchQuery, selectedGrade, selectedSection) {
+        LaunchedEffect(academicYearFilter.selectedYearId) {
+            if (!academicYearFilter.isReady) return@LaunchedEffect
+            classRepository.getGrades().onSuccess { grades = it }
+            selectedGrade = null
+            selectedSection = null
+        }
+
+        LaunchedEffect(selectedGrade) {
+            classRepository.getSections(selectedGrade).onSuccess { sections = it }
+            if (selectedGrade == null) selectedSection = null
+        }
+
+        LaunchedEffect(
+            academicYearFilter.isReady,
+            academicYearFilter.selectedYearId,
+            searchQuery,
+            selectedGrade,
+            selectedSection
+        ) {
+            if (!academicYearFilter.isReady || academicYearFilter.selectedYearId == null) return@LaunchedEffect
             if (searchQuery.length >= 2 || searchQuery.isEmpty()) {
                 isLoading = true
-                if (searchQuery.isNotEmpty()) delay(500) // Debounce
+                students = emptyList()
+                if (searchQuery.isNotEmpty()) delay(500)
+                val yearId = academicYearFilter.selectedYearId
+                academicYearFilter.selectedYear?.let { year ->
+                    SessionManager.setAcademicYear(year.id, year.name)
+                }
                 repository.getStudents(
                     query = searchQuery.ifBlank { null },
                     grade = selectedGrade,
-                    section = selectedSection
-                ).onSuccess {
-                    students = it
-                }
+                    section = selectedSection,
+                    academicYearId = yearId
+                ).onSuccess { students = it }
                 isLoading = false
             }
         }
 
-        val availableGrades = remember(classes) {
-            classes.map { it.name }.distinct().sorted()
-        }
-        
-        val availableSections = remember(classes, selectedGrade) {
-            if (selectedGrade == null) {
-                classes.map { it.section }.distinct().sorted()
-            } else {
-                classes.filter { it.name == selectedGrade }.map { it.section }.distinct().sorted()
-            }
-        }
+        val hasActiveFilters = academicYearFilter.selectedYearId != null ||
+            selectedGrade != null ||
+            selectedSection != null
 
         Scaffold(
             topBar = {
@@ -87,7 +105,6 @@ class MyStudentsScreen : Screen {
             }
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                // Search Bar
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
@@ -104,41 +121,71 @@ class MyStudentsScreen : Screen {
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // Filters Row
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilterDropdown(
+                    FilterOptionDropdown(
+                        label = "Academic Year",
+                        options = academicYearFilter.options,
+                        selectedValue = academicYearFilter.selectedYearId,
+                        onOptionSelected = { yearId ->
+                            yearId?.let { academicYearFilter.onYearSelected(it) }
+                        },
+                        allowAll = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (academicYearFilter.isLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        color = PrimaryBlue
+                    )
+                } else if (academicYearFilter.error != null) {
+                    Text(
+                        text = academicYearFilter.error,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterOptionDropdown(
                         label = "Class",
-                        options = availableGrades,
-                        selectedOption = selectedGrade,
-                        onOptionSelected = { 
+                        options = gradeOptions,
+                        selectedValue = selectedGrade,
+                        onOptionSelected = {
                             selectedGrade = it
-                            selectedSection = null // Reset section when class changes
+                            selectedSection = null
                         },
                         modifier = Modifier.weight(1f)
                     )
-                    
-                    FilterDropdown(
+
+                    FilterOptionDropdown(
                         label = "Section",
-                        options = availableSections,
-                        selectedOption = selectedSection,
+                        options = sections,
+                        selectedValue = selectedSection,
                         onOptionSelected = { selectedSection = it },
                         modifier = Modifier.weight(1f)
                     )
 
-                    if (selectedGrade != null || selectedSection != null) {
-                        IconButton(
-                            onClick = {
+                    if (hasActiveFilters) {
+                        ClearFiltersButton(
+                            onClear = {
+                                val current = academicYearFilter.academicYears.find { it.is_current }
+                                    ?: academicYearFilter.academicYears.firstOrNull()
+                                current?.let { academicYearFilter.onYearSelected(it.id) }
                                 selectedGrade = null
                                 selectedSection = null
-                            },
-                            modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), CircleShape)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Clear Filters", tint = MaterialTheme.colorScheme.error)
-                        }
+                            }
+                        )
                     }
                 }
 
@@ -149,9 +196,9 @@ class MyStudentsScreen : Screen {
                 } else if (students.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (searchQuery.isNotEmpty() || selectedGrade != null || selectedSection != null) 
-                                "No students found with current filters" 
-                            else "No students available", 
+                            if (searchQuery.isNotEmpty() || hasActiveFilters)
+                                "No students found with current filters"
+                            else "No students available",
                             color = SecondaryText
                         )
                     }
@@ -168,62 +215,6 @@ class MyStudentsScreen : Screen {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FilterDropdown(
-    label: String,
-    options: List<String>,
-    selectedOption: String?,
-    onOptionSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = modifier
-    ) {
-        OutlinedTextField(
-            value = selectedOption ?: "All $label",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label, style = MaterialTheme.typography.labelMedium) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(
-                focusedBorderColor = PrimaryBlue,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            ),
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
-            shape = RoundedCornerShape(12.dp),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp)
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(Color.White)
-        ) {
-            DropdownMenuItem(
-                text = { Text("All $label", style = MaterialTheme.typography.bodyMedium) },
-                onClick = {
-                    onOptionSelected(null)
-                    expanded = false
-                }
-            )
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option, style = MaterialTheme.typography.bodyMedium) },
-                    onClick = {
-                        onOptionSelected(option)
-                        expanded = false
-                    }
-                )
             }
         }
     }
@@ -248,9 +239,9 @@ fun StudentCard(student: Student, onClick: () -> Unit) {
             ) {
                 Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(student.full_name, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(
@@ -272,7 +263,7 @@ fun StudentCard(student: Student, onClick: () -> Unit) {
                     )
                 }
             }
-            
+
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
         }
     }

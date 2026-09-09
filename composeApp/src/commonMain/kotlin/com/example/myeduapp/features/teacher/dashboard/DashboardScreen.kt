@@ -183,8 +183,9 @@ fun StatsSection(role: UserRole, data: DashboardResponse?) {
                     DashboardStatCard("Teachers", stats?.overview?.get("total_teachers")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
                 }
                 UserRole.TEACHER -> {
-                    DashboardStatCard("My Classes", stats?.quick_stats?.get("classes")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", InfoColor, Modifier.weight(1f))
+                    DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
+                    val attendance = stats?.attendance?.students?.percentage ?: 0f
+                    DashboardStatCard("Attendance", "${attendance.toInt()}%", if (attendance > 75) SuccessColor else WarningColor, Modifier.weight(1f))
                 }
                 UserRole.ACCOUNTANT -> {
                     DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", SuccessColor, Modifier.weight(1f))

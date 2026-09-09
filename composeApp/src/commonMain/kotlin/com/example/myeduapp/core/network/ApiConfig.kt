@@ -18,11 +18,15 @@ object ApiConfig {
     
     // Feature Routes
     const val ATTENDANCE_STUDENT = "attendance/student"
+    const val ATTENDANCE_TEACHER = "attendance/teacher"
     const val ATTENDANCE_CLASS = "attendance/class"
-    const val ATTENDANCE_SUBMIT = "attendance/submit"
+    const val ATTENDANCE_BULK = "attendance/bulk"
     const val STUDENTS = "students"
     const val CLASSES = "classes"
-    const val BRANCH_CLASSES = "branch-classes"
+    const val CLASS_GRADES = "classes/grades"
+    const val CLASS_SECTIONS = "classes/sections"
+    const val ACADEMIC_YEARS = "academic-years"
+    const val ACADEMIC_YEAR_CURRENT = "academic-years/current"
     const val ASSIGNMENTS = "assignments"
     const val EXAMS_UPCOMING = "dashboard/upcoming-exams"
     const val EXAMS_RESULTS = "dashboard/student-results"

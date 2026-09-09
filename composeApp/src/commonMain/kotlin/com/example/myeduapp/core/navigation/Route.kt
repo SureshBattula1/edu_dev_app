@@ -4,7 +4,6 @@ sealed class Route(val path: String) {
     object Login : Route("login")
     object Register : Route("register")
     object Dashboard : Route("dashboard")
-    object MyClasses : Route("my_classes")
     object MyStudents : Route("my_students")
     object Student360 : Route("student360")
     object Assignments : Route("assignments")

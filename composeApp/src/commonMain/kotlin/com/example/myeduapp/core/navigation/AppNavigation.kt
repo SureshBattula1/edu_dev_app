@@ -29,7 +29,6 @@ object AppNavigation {
             }
             UserRole.TEACHER -> {
                 items.add(NavItem("Home", Icons.Default.Dashboard, Route.Dashboard))
-                items.add(NavItem("Classes", Icons.Default.Class, Route.MyClasses))
                 items.add(NavItem("Attendance", Icons.Default.CheckCircle, Route.Attendance))
                 items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
             }
@@ -43,6 +42,7 @@ object AppNavigation {
             }
             UserRole.STUDENT -> {
                 items.add(NavItem("Home", Icons.Default.Dashboard, Route.Dashboard))
+                items.add(NavItem("Attendance", Icons.Default.CheckCircle, Route.Attendance))
                 items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
                 items.add(NavItem("Results", Icons.Default.Grade, Route.Exams))
             }
@@ -62,7 +62,6 @@ object AppNavigation {
         
         when (role) {
             UserRole.TEACHER -> {
-                items.add(NavItem("My Classes", Icons.Default.Class, Route.MyClasses))
                 items.add(NavItem("My Students", Icons.Default.Group, Route.MyStudents))
                 items.add(NavItem("Attendance", Icons.Default.CheckCircle, Route.Attendance))
                 items.add(NavItem("Assignments", Icons.Default.Assignment, Route.Assignments))
@@ -70,6 +69,9 @@ object AppNavigation {
                 items.add(NavItem("Marks", Icons.Default.Grade, Route.Marks))
                 items.add(NavItem("Timetable", Icons.Default.Schedule, Route.Timetable))
                 items.add(NavItem("My Leaves", Icons.Default.EventNote, Route.Leaves))
+            }
+            UserRole.STUDENT -> {
+                items.add(NavItem("My Attendance", Icons.Default.CheckCircle, Route.Attendance))
             }
             else -> {
                 items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))

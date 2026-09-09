@@ -28,7 +28,6 @@ import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.features.auth.login.LoginScreen
 import com.example.myeduapp.features.auth.splash.SplashScreen
 import com.example.myeduapp.features.teacher.dashboard.TeacherDashboardScreen
-import com.example.myeduapp.features.teacher.classes.MyClassesScreen
 import com.example.myeduapp.features.teacher.students.MyStudentsScreen
 import com.example.myeduapp.features.teacher.assignments.AssignmentsScreen
 import com.example.myeduapp.features.teacher.exams.*
@@ -37,6 +36,7 @@ import com.example.myeduapp.features.teacher.notices.*
 import com.example.myeduapp.features.teacher.communication.TeacherCommunicationScreen
 import com.example.myeduapp.features.teacher.dashboard.DashboardScreen
 import com.example.myeduapp.features.teacher.attendance.*
+import com.example.myeduapp.features.attendance.AttendanceHubScreen
 import com.example.myeduapp.features.teacher.fees.*
 import com.example.myeduapp.features.teacher.leaves.*
 import com.example.myeduapp.features.teacher.timetable.*
@@ -168,7 +168,6 @@ class MainScreen : Screen {
                                     scope.launch { drawerState.close() }
                                     when (item.route) {
                                         Route.Dashboard -> { /* Already on dashboard root */ }
-                                        Route.MyClasses -> navigator.push(MyClassesScreen())
                                         Route.MyStudents -> navigator.push(MyStudentsScreen())
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
                                         Route.Exams -> navigator.push(TeacherExamsScreen())
@@ -177,7 +176,7 @@ class MainScreen : Screen {
                                         Route.Timetable -> navigator.push(TeacherTimetableScreen())
                                         Route.Notices -> navigator.push(TeacherNoticesScreen())
                                         Route.Profile -> navigator.push(ProfileScreen())
-                                        Route.Attendance -> navigator.push(TeacherAttendanceScreen())
+                                        Route.Attendance -> navigator.push(AttendanceHubScreen())
                                         Route.Fees -> navigator.push(TeacherFeesScreen())
                                         else -> navigator.push(PlaceholderScreen(item.label))
                                     }
@@ -216,12 +215,11 @@ class MainScreen : Screen {
                         onNavigate = { route ->
                             val targetScreen: Screen = when(route) {
                                 Route.Profile.path -> ProfileScreen()
-                                Route.MyClasses.path -> MyClassesScreen()
                                 Route.MyStudents.path -> MyStudentsScreen()
                                 Route.Assignments.path -> AssignmentsScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
                                 Route.Marks.path -> MarksScreen()
-                                Route.Attendance.path -> TeacherAttendanceScreen()
+                                Route.Attendance.path -> AttendanceHubScreen()
                                 Route.Fees.path -> TeacherFeesScreen()
                                 Route.Leaves.path -> TeacherLeaveScreen()
                                 Route.Timetable.path -> TeacherTimetableScreen()
@@ -238,9 +236,8 @@ class MainScreen : Screen {
                         onNavigate = { route ->
                             val targetScreen: Screen = when(route) {
                                 Route.Profile.path -> ProfileScreen()
-                                Route.MyClasses.path -> MyClassesScreen()
                                 Route.MyStudents.path -> MyStudentsScreen()
-                                Route.Attendance.path -> TeacherAttendanceScreen()
+                                Route.Attendance.path -> AttendanceHubScreen()
                                 Route.Fees.path -> TeacherFeesScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
                                 Route.Leaves.path -> TeacherLeaveScreen()

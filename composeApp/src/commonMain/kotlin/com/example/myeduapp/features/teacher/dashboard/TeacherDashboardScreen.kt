@@ -35,6 +35,7 @@ import com.example.myeduapp.core.ui.theme.ErrorColor
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.data.model.UserRole
+import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +45,9 @@ fun TeacherDashboardScreen(
     onMenuClick: () -> Unit,
     onNotificationClick: () -> Unit
 ) {
+    val academicYearFilter = rememberAcademicYearFilter()
+    val academicYearLabel = academicYearFilter.selectedYear?.name?.uppercase() ?: "ACADEMIC YEAR"
+
     AuthorizationWrapper(requiredRoles = listOf(UserRole.TEACHER)) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background
@@ -54,7 +58,7 @@ fun TeacherDashboardScreen(
             ) {
                 // Sunrise Academic Hero Header
                 item {
-                    TeacherHeroHeader(user, onMenuClick, onNotificationClick)
+                    TeacherHeroHeader(user, academicYearLabel, onMenuClick, onNotificationClick)
                 }
 
                 item {
@@ -107,7 +111,12 @@ fun TeacherDashboardScreen(
 }
 
 @Composable
-fun TeacherHeroHeader(user: User, onMenuClick: () -> Unit, onNotificationClick: () -> Unit) {
+fun TeacherHeroHeader(
+    user: User,
+    academicYearLabel: String,
+    onMenuClick: () -> Unit,
+    onNotificationClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,7 +148,7 @@ fun TeacherHeroHeader(user: User, onMenuClick: () -> Unit, onNotificationClick: 
                     modifier = Modifier.height(32.dp)
                 ) {
                     Text(
-                        "ACADEMIC YEAR 2025-26",
+                        academicYearLabel,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color = Color.White,

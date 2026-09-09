@@ -1,5 +1,6 @@
 package com.example.myeduapp.core.network
 
+import com.example.myeduapp.core.datastore.SessionManager
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -11,10 +12,11 @@ import kotlinx.serialization.json.Json
 
 object ApiClient {
 
-    private val jsonConfig = Json {
+    val jsonConfig = Json {
         prettyPrint = true
         isLenient = true
         ignoreUnknownKeys = true
+        encodeDefaults = false
     }
 
     val client: HttpClient = HttpClient {
@@ -41,6 +43,9 @@ object ApiClient {
             url(ApiConfig.BASE_URL)
             contentType(ContentType.Application.Json)
             accept(ContentType.Application.Json)
+            SessionManager.academicYearId?.let { yearId ->
+                header("X-Academic-Year-Id", yearId)
+            }
         }
     }
 }

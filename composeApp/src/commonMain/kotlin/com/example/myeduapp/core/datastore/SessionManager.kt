@@ -16,12 +16,20 @@ object SessionManager {
 
     private const val KEY_TOKEN = "auth_token"
     private const val KEY_USER = "auth_user"
+    private const val KEY_ACADEMIC_YEAR_ID = "academic_year_id"
+    private const val KEY_ACADEMIC_YEAR_NAME = "academic_year_name"
 
     private var _token: String? = null
     val token: String? get() = _token
 
     private var _user: User? = null
     val user: User? get() = _user
+
+    private var _academicYearId: String? = null
+    val academicYearId: String? get() = _academicYearId
+
+    private var _academicYearName: String? = null
+    val academicYearName: String? get() = _academicYearName
 
     init {
         loadSession()
@@ -36,6 +44,11 @@ object SessionManager {
             } catch (e: Exception) {
                 null
             }
+        }
+
+        secureStorage.getString(KEY_ACADEMIC_YEAR_ID)?.takeIf { it.isNotBlank() }?.let { id ->
+            _academicYearId = id
+            _academicYearName = secureStorage.getString(KEY_ACADEMIC_YEAR_NAME)
         }
 
         if (_token != null && _user != null) {
@@ -56,10 +69,19 @@ object SessionManager {
         _authState.value = AuthState.Authenticated(user, token)
     }
 
+    fun setAcademicYear(id: String, name: String) {
+        _academicYearId = id
+        _academicYearName = name
+        secureStorage.saveString(KEY_ACADEMIC_YEAR_ID, id)
+        secureStorage.saveString(KEY_ACADEMIC_YEAR_NAME, name)
+    }
+
     fun clearSession() {
         println("SessionManager: Clearing session")
         _user = null
         _token = null
+        _academicYearId = null
+        _academicYearName = null
         secureStorage.clear()
         _authState.value = AuthState.Unauthenticated
     }

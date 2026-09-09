@@ -48,11 +48,13 @@ fun AppTopBar(
 @Composable
 fun AppBackTopBar(
     title: String,
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null,
+    actions: @Composable () -> Unit = {}
 ) {
     AppTopBar(
         title = title,
-        navigationIcon = Icons.AutoMirrored.Filled.ArrowBack,
-        onNavigationClick = onBack
+        navigationIcon = if (onBack != null) Icons.AutoMirrored.Filled.ArrowBack else null,
+        onNavigationClick = onBack ?: {},
+        actions = actions
     )
 }
