@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
@@ -25,9 +26,10 @@ fun MyAttendanceScreen(
     onBack: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val pureWhite = Color.White
 
     Scaffold(
-        containerColor = colorScheme.background,
+        containerColor = pureWhite,
         topBar = {
             TopAppBar(
                 title = {

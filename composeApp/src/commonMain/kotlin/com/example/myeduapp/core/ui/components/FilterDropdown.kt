@@ -57,20 +57,22 @@ fun FilterOptionDropdown(
     selectedValue: String?,
     onOptionSelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
-    allowAll: Boolean = true
+    allowAll: Boolean = true,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
     val displayText = options.find { it.value == selectedValue }?.label ?: "All $label"
 
     ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
+        expanded = expanded && enabled,
+        onExpandedChange = { if (enabled) expanded = !expanded },
         modifier = modifier
     ) {
         OutlinedTextField(
             value = if (selectedValue == null) "All $label" else displayText,
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             label = { Text(label, style = MaterialTheme.typography.labelMedium) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(

@@ -37,7 +37,6 @@ import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.NavItem
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.AppCard
-import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -46,7 +45,8 @@ import kotlinx.serialization.json.contentOrNull
 fun DashboardScreen(
     onNavigate: (String) -> Unit,
     onMenuClick: () -> Unit,
-    onNotificationClick: () -> Unit
+    onNotificationClick: () -> Unit,
+    unreadCount: Int = 0
 ) {
     val authState by SessionManager.authState.collectAsState()
     val user = (authState as? AuthState.Authenticated)?.user ?: return
@@ -54,43 +54,35 @@ fun DashboardScreen(
     
     val repository = remember { DashboardRepository() }
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         repository.getDashboard().onSuccess {
             dashboardData = it
-            isLoading = false
-        }.onFailure {
-            isLoading = false
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { _ ->
-        if (isLoading) {
-            AppLoaderFullscreen(message = "Loading dashboard")
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                item {
-                    GenericHeroHeader(user.name, role, onMenuClick, onNotificationClick)
-                }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            item {
+                GenericHeroHeader(user.name, role, onMenuClick, onNotificationClick, unreadCount)
+            }
 
-                item {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp)
-                    ) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        StatsSection(role, dashboardData)
-                        
-                        Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium)
-                        QuickActionsGrid(role, onNavigate)
-                    }
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    StatsSection(role, dashboardData)
+
+                    Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium)
+                    QuickActionsGrid(role, onNavigate)
                 }
             }
         }
@@ -98,7 +90,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onNotificationClick: () -> Unit) {
+fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onNotificationClick: () -> Unit, unreadCount: Int = 0) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,7 +120,11 @@ fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onN
                     onClick = onNotificationClick,
                     modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                    BadgedBox(badge = {
+                        if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
+                    }) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                    }
                 }
             }
             

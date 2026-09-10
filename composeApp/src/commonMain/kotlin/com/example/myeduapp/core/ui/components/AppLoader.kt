@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -31,6 +30,11 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+
+/** Dark blue / red / green palette for the orbital 3D loader. */
+private val LoaderBlue = Color(0xFF56B1FF)
+private val LoaderRed = Color(0xFFFF4E4E)
+private val LoaderGreen = Color(0xFF4EDEA3)
 
 @Composable
 fun AppLoader(
@@ -46,9 +50,9 @@ fun AppLoader(
     ) {
         Orbital3DLoader(
             modifier = Modifier.size(size),
-            primary = colorScheme.primary,
-            accent = colorScheme.tertiary,
-            highlight = colorScheme.secondary
+            primary = LoaderBlue,
+            accent = LoaderRed,
+            highlight = LoaderGreen
         )
         if (!message.isNullOrBlank()) {
             Text(
@@ -68,9 +72,9 @@ fun AppLoaderCompact(
 ) {
     Orbital3DLoader(
         modifier = modifier.size(size),
-        primary = MaterialTheme.colorScheme.primary,
-        accent = MaterialTheme.colorScheme.tertiary,
-        highlight = MaterialTheme.colorScheme.secondary
+        primary = LoaderBlue,
+        accent = LoaderRed,
+        highlight = LoaderGreen
     )
 }
 
@@ -140,16 +144,6 @@ fun Orbital3DLoader(
             return Triple(Offset(cx + x * scale, cy + y * scale), scale, depth)
         }
 
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(primary.copy(alpha = 0.18f), Color.Transparent),
-                center = Offset(cx, cy + radius * 0.55f),
-                radius = radius * 1.35f
-            ),
-            radius = radius * 1.15f,
-            center = Offset(cx, cy + radius * 0.48f)
-        )
-
         rotate(degrees = rotation * 0.35f, pivot = Offset(cx, cy)) {
             drawCircle(
                 color = primary.copy(alpha = 0.22f),
@@ -184,32 +178,15 @@ fun Orbital3DLoader(
                 center = orb.pos + Offset(0f, r * 0.55f)
             )
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.95f),
-                        orb.color,
-                        orb.color.copy(alpha = 0.75f)
-                    ),
-                    center = orb.pos + Offset(-r * 0.28f, -r * 0.32f),
-                    radius = r * 1.35f
-                ),
+                color = orb.color,
                 radius = r,
                 center = orb.pos
-            )
-            drawCircle(
-                color = Color.White.copy(alpha = 0.55f),
-                radius = r * 0.22f,
-                center = orb.pos + Offset(-r * 0.28f, -r * 0.28f)
             )
         }
 
         val coreR = radius * 0.22f * pulse
         drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(Color.White, primary, primary.copy(alpha = 0.85f)),
-                center = Offset(cx - coreR * 0.25f, cy - coreR * 0.3f),
-                radius = coreR * 1.4f
-            ),
+            color = primary,
             radius = coreR,
             center = Offset(cx, cy)
         )

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import kotlinx.coroutines.launch
 import com.example.myeduapp.data.model.Notification
 import com.example.myeduapp.data.model.Holiday
 import com.example.myeduapp.data.repository.CommunicationRepository
@@ -29,6 +30,7 @@ import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
 import com.example.myeduapp.core.ui.theme.WarningColor
+import com.example.myeduapp.features.notifications.NotificationCard
 
 class TeacherCommunicationScreen : Screen {
     @Composable
@@ -46,12 +48,13 @@ fun TeacherCommunicationScreenContent(onBack: (() -> Unit)? = null) {
     var holidays by remember { mutableStateOf<List<Holiday>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableStateOf(0) }
+    val scope = rememberCoroutineScope()
     
     val tabs = listOf("Notifications", "Holidays")
 
     LaunchedEffect(Unit) {
         isLoading = true
-        val notifResult = repository.getNotifications()
+        val notifResult = repository.getNotifications(unreadOnly = false, limit = 20)
         val holidayResult = repository.getHolidays()
         
         if (notifResult.isSuccess) notifications = notifResult.getOrNull() ?: emptyList()
@@ -98,7 +101,14 @@ fun TeacherCommunicationScreenContent(onBack: (() -> Unit)? = null) {
                 AppLoaderFullscreen(message = "Loading updates")
             } else {
                 when (selectedTab) {
-                    0 -> NotificationsList(notifications)
+                    0 -> NotificationsList(notifications) { notification ->
+                        scope.launch {
+                            repository.markAsRead(notification.id)
+                            notifications = notifications.map {
+                                if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it
+                            }
+                        }
+                    }
                     1 -> HolidaysList(holidays)
                 }
             }
@@ -107,7 +117,7 @@ fun TeacherCommunicationScreenContent(onBack: (() -> Unit)? = null) {
 }
 
 @Composable
-fun NotificationsList(notifications: List<Notification>) {
+fun NotificationsList(notifications: List<Notification>, onOpen: (Notification) -> Unit = {}) {
     if (notifications.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No notifications")
@@ -118,8 +128,8 @@ fun NotificationsList(notifications: List<Notification>) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(notifications) { notification ->
-                NotificationCard(notification)
+            items(notifications, key = { it.id }) { notification ->
+                NotificationCard(notification, onClick = { onOpen(notification) })
             }
         }
     }
@@ -139,38 +149,6 @@ fun HolidaysList(holidays: List<Holiday>) {
         ) {
             items(holidays) { holiday ->
                 HolidayCard(holiday)
-            }
-        }
-    }
-}
-
-@Composable
-fun NotificationCard(notification: Notification) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = if (notification.is_read) Color.White else InfoColor.copy(alpha = 0.05f)),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Box(
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(InfoColor.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Notifications, contentDescription = null, tint = InfoColor)
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(notification.title, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(notification.message, fontSize = 14.sp, color = SecondaryText)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(notification.date, fontSize = 11.sp, color = SecondaryText.copy(alpha = 0.7f))
             }
         }
     }

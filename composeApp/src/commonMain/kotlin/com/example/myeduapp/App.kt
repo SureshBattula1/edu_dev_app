@@ -27,10 +27,17 @@ import cafe.adriel.voyager.transitions.SlideTransition
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.features.auth.login.LoginScreen
-import com.example.myeduapp.features.auth.splash.SplashScreen
+import com.example.myeduapp.features.auth.splash.SplashContent
 import com.example.myeduapp.features.teacher.dashboard.TeacherDashboardScreen
 import com.example.myeduapp.features.teacher.students.MyStudentsScreen
 import com.example.myeduapp.features.teacher.assignments.AssignmentsScreen
+import com.example.myeduapp.features.notifications.IncomingNotificationBanner
+import com.example.myeduapp.features.notifications.NotificationCenterScreen
+import com.example.myeduapp.data.model.Notification
+import com.example.myeduapp.data.repository.CommunicationRepository
+import com.example.myeduapp.core.sound.showAppNotification
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.example.myeduapp.features.teacher.exams.*
 import com.example.myeduapp.features.teacher.marks.MarksScreen
 import com.example.myeduapp.features.teacher.notices.*
@@ -60,27 +67,37 @@ fun App() {
     MyEduAppTheme {
         val authState by SessionManager.authState.collectAsState()
         val authRepository = remember { AuthRepository() }
-        
+        var splashDone by remember { mutableStateOf(false) }
+
         LaunchedEffect(Unit) {
             authRepository.checkAuth()
         }
-        
+
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            when (authState) {
-                is AuthState.Idle, is AuthState.Loading -> {
-                    Navigator(SplashScreen())
-                }
-                is AuthState.Authenticated -> {
-                    Navigator(MainScreen()) { navigator ->
-                        SlideTransition(navigator)
+            if (!splashDone) {
+                SplashContent(onFinished = { splashDone = true })
+            } else {
+                when (authState) {
+                    is AuthState.Idle, is AuthState.Loading -> {
+                        // No spinner — brief white hold while auth settles (rare).
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.White)
+                        )
                     }
-                }
-                else -> {
-                    Navigator(LoginScreen()) { navigator ->
-                        SlideTransition(navigator)
+                    is AuthState.Authenticated -> {
+                        Navigator(MainScreen()) { navigator ->
+                            SlideTransition(navigator)
+                        }
+                    }
+                    else -> {
+                        Navigator(LoginScreen()) { navigator ->
+                            SlideTransition(navigator)
+                        }
                     }
                 }
             }
@@ -132,6 +149,30 @@ class MainScreen : Screen {
         val drawerItems = AppNavigation.getDrawerItems(role)
 
         var showLogoutDialog by remember { mutableStateOf(false) }
+        var unreadCount by remember { mutableStateOf(0) }
+        var incomingAlert by remember { mutableStateOf<Notification?>(null) }
+        var knownUnreadIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+        val communicationRepository = remember { CommunicationRepository() }
+
+        LaunchedEffect(user.id) {
+            var primed = false
+            while (true) {
+                communicationRepository.getNotifications(unreadOnly = true, limit = 20).onSuccess { unread ->
+                    val ids = unread.map { it.id }.toSet()
+                    unreadCount = unread.size
+                    if (primed) {
+                        val newest = unread.firstOrNull { it.id !in knownUnreadIds }
+                        if (newest != null) {
+                            showAppNotification(newest.title, newest.message)
+                            incomingAlert = newest
+                        }
+                    }
+                    knownUnreadIds = ids
+                    primed = true
+                }
+                delay(8_000)
+            }
+        }
 
         if (showLogoutDialog) {
             AlertDialog(
@@ -204,6 +245,7 @@ class MainScreen : Screen {
                                         Route.Dashboard -> { /* Already on dashboard root */ }
                                         Route.MyStudents -> navigator.push(MyStudentsScreen())
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
+                                        Route.Notifications -> navigator.push(NotificationCenterScreen())
                                         Route.Exams -> navigator.push(TeacherExamsScreen())
                                         Route.Marks -> navigator.push(MarksScreen())
                                         Route.Leaves -> navigator.push(LeaveHubScreen())
@@ -252,6 +294,7 @@ class MainScreen : Screen {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.MyStudents.path -> MyStudentsScreen()
                                 Route.Assignments.path -> AssignmentsScreen()
+                                Route.Notifications.path -> NotificationCenterScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
                                 Route.Marks.path -> MarksScreen()
                                 Route.Attendance.path -> AttendanceHubScreen()
@@ -264,7 +307,8 @@ class MainScreen : Screen {
                             navigator.push(targetScreen)
                         },
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onNotificationClick = { /* Handle notifications */ }
+                        onNotificationClick = { navigator.push(NotificationCenterScreen()) },
+                        unreadCount = unreadCount
                     )
                 } else {
                     DashboardScreen(
@@ -273,6 +317,8 @@ class MainScreen : Screen {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.Student360.path -> Student360Screen()
                                 Route.MyStudents.path -> MyStudentsScreen()
+                                Route.Assignments.path -> AssignmentsScreen()
+                                Route.Notifications.path -> NotificationCenterScreen()
                                 Route.Attendance.path -> AttendanceHubScreen()
                                 Route.Fees.path -> TeacherFeesScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
@@ -284,8 +330,24 @@ class MainScreen : Screen {
                             navigator.push(targetScreen)
                         },
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onNotificationClick = { /* Handle notifications */ }
+                        onNotificationClick = { navigator.push(NotificationCenterScreen()) },
+                        unreadCount = unreadCount
                     )
+                }
+
+                incomingAlert?.let { alert ->
+                    Box(
+                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).statusBarsPadding()
+                    ) {
+                        IncomingNotificationBanner(
+                            notification = alert,
+                            onOpen = {
+                                incomingAlert = null
+                                navigator.push(NotificationCenterScreen())
+                            },
+                            onDismiss = { incomingAlert = null }
+                        )
+                    }
                 }
             }
         }

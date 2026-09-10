@@ -117,6 +117,116 @@ data class ClassAttendanceResult(
 )
 
 @Serializable
+data class ClassAttendanceStatus(
+    val grade: String? = null,
+    val section: String? = null,
+    val class_name: String? = null,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val student_count: Int = 0,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val present: Int = 0,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val absent: Int = 0,
+    @Serializable(with = JsonFlexibleBooleanSerializer::class)
+    val created: Boolean = false,
+    @Serializable(with = JsonFlexibleBooleanSerializer::class)
+    val notify_sent: Boolean = false,
+    val notify_group_key: String? = null,
+    val notify_sent_at: String? = null
+) {
+    val displayName: String
+        get() = class_name?.takeIf { it.isNotBlank() }
+            ?: run {
+                val g = grade.orEmpty()
+                val s = section.orEmpty()
+                when {
+                    g.isNotEmpty() && s.isNotEmpty() -> "Grade $g - $s"
+                    g.isNotEmpty() -> "Grade $g"
+                    else -> s.ifBlank { "Class" }
+                }
+            }
+
+    val selectionKey: String get() = "${grade.orEmpty()}|${section.orEmpty()}"
+}
+
+@Serializable
+data class ClassAttendanceStatusResponse(
+    val success: Boolean,
+    val data: List<ClassAttendanceStatus> = emptyList(),
+    val message: String? = null
+)
+
+@Serializable
+data class AttendanceNotifyClass(
+    val grade: String,
+    val section: String
+)
+
+@Serializable
+data class AttendanceNotifyRequest(
+    val date: String,
+    val classes: List<AttendanceNotifyClass>
+)
+
+@Serializable
+data class AttendanceNotifyCampaign(
+    val grade: String? = null,
+    val section: String? = null,
+    val group_key: String? = null,
+    @Serializable(with = JsonFlexibleNullableIntSerializer::class)
+    val student_count: Int? = null,
+    val sent_at: String? = null
+)
+
+@Serializable
+data class AttendanceNotifyResult(
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val student_count: Int = 0,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val skipped_no_login: Int = 0,
+    val campaigns: List<AttendanceNotifyCampaign> = emptyList()
+)
+
+@Serializable
+data class AttendanceNotifyResponse(
+    val success: Boolean,
+    val data: AttendanceNotifyResult? = null,
+    val message: String? = null
+)
+
+@Serializable
+data class AttendanceNotifyStudent(
+    @Serializable(with = JsonFlexibleIdSerializer::class)
+    val user_id: String = "",
+    val name: String = "",
+    val roll_number: String? = null,
+    val status: String? = null,
+    @Serializable(with = JsonFlexibleBooleanSerializer::class)
+    val sent: Boolean = false,
+    val sent_at: String? = null
+)
+
+@Serializable
+data class AttendanceNotifyReceipts(
+    val grade: String? = null,
+    val section: String? = null,
+    val date: String? = null,
+    val group_key: String? = null,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val sent_count: Int = 0,
+    @Serializable(with = JsonFlexibleIntSerializer::class)
+    val total: Int = 0,
+    val students: List<AttendanceNotifyStudent> = emptyList()
+)
+
+@Serializable
+data class AttendanceNotifyReceiptsResponse(
+    val success: Boolean,
+    val data: AttendanceNotifyReceipts? = null,
+    val message: String? = null
+)
+
+@Serializable
 data class BulkAttendanceItem(
     @Serializable(with = JsonFlexibleIdSerializer::class)
     val id: String,

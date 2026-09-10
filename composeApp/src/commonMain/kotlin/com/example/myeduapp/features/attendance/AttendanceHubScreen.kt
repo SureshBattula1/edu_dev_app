@@ -24,7 +24,7 @@ import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SuccessColor
 import com.example.myeduapp.core.ui.theme.WarningColor
 import com.example.myeduapp.data.model.UserRole
-import com.example.myeduapp.features.teacher.attendance.CreateAttendanceScreen
+import com.example.myeduapp.features.teacher.attendance.TeacherAttendanceOverviewScreen
 import com.example.myeduapp.features.teacher.attendance.TeacherAttendanceScreen
 
 class AttendanceHubScreen : Screen {
@@ -87,18 +87,18 @@ class AttendanceHubScreen : Screen {
                         UserRole.TEACHER -> {
                             Text("CLASS ATTENDANCE", fontWeight = FontWeight.Bold, color = PrimaryBlue, fontSize = 12.sp)
                             AttendanceActionCard(
+                                title = "Today’s Attendance",
+                                subtitle = "Class/section overview — tap to mark or update",
+                                icon = Icons.Default.EditCalendar,
+                                accent = SuccessColor,
+                                onClick = { navigator.push(TeacherAttendanceOverviewScreen()) }
+                            )
+                            AttendanceActionCard(
                                 title = "View Attendance",
                                 subtitle = "Filter by class, section & date",
                                 icon = Icons.Default.Visibility,
                                 accent = PrimaryBlue,
                                 onClick = { navigator.push(TeacherAttendanceScreen()) }
-                            )
-                            AttendanceActionCard(
-                                title = "Mark Attendance",
-                                subtitle = "Select class, section & date — loads existing data to update",
-                                icon = Icons.Default.EditCalendar,
-                                accent = SuccessColor,
-                                onClick = { navigator.push(CreateAttendanceScreen()) }
                             )
                             Spacer(Modifier.height(4.dp))
                             Text("MY ATTENDANCE", fontWeight = FontWeight.Bold, color = PrimaryBlue, fontSize = 12.sp)
@@ -144,18 +144,18 @@ class AttendanceHubScreen : Screen {
                         }
                         else -> {
                             AttendanceActionCard(
+                                title = "Today’s Attendance",
+                                subtitle = "Class/section overview — tap to mark or update",
+                                icon = Icons.Default.EditCalendar,
+                                accent = SuccessColor,
+                                onClick = { navigator.push(TeacherAttendanceOverviewScreen()) }
+                            )
+                            AttendanceActionCard(
                                 title = "View Class Attendance",
                                 subtitle = "Filter by class, section & date",
                                 icon = Icons.Default.Groups,
                                 accent = PrimaryBlue,
                                 onClick = { navigator.push(TeacherAttendanceScreen()) }
-                            )
-                            AttendanceActionCard(
-                                title = "Mark Attendance",
-                                subtitle = "Select class, section & date — loads existing data to update",
-                                icon = Icons.Default.EditCalendar,
-                                accent = SuccessColor,
-                                onClick = { navigator.push(CreateAttendanceScreen()) }
                             )
                         }
                     }

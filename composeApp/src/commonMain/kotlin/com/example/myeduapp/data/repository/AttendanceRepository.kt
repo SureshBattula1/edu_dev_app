@@ -14,7 +14,17 @@ import com.example.myeduapp.data.model.BulkAttendanceItem
 
 import com.example.myeduapp.data.model.BulkAttendanceRequest
 
+import com.example.myeduapp.data.model.AttendanceNotifyClass
+
+import com.example.myeduapp.data.model.AttendanceNotifyReceipts
+
+import com.example.myeduapp.data.model.AttendanceNotifyRequest
+
+import com.example.myeduapp.data.model.AttendanceNotifyResult
+
 import com.example.myeduapp.data.model.ClassAttendanceResult
+
+import com.example.myeduapp.data.model.ClassAttendanceStatus
 
 import com.example.myeduapp.data.model.SchoolClass
 
@@ -133,6 +143,102 @@ class AttendanceRepository {
                 )
 
             )
+
+        } catch (e: Exception) {
+
+            Result.failure(e)
+
+        }
+
+    }
+
+
+
+    suspend fun getClassStatus(date: String): Result<List<ClassAttendanceStatus>> = withContext(Dispatchers.IO) {
+
+        try {
+
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+
+            val response = api.getClassStatus(token, date)
+
+            if (!response.success) {
+
+                return@withContext Result.failure(Exception(response.message ?: "Failed to load class attendance"))
+
+            }
+
+            Result.success(response.data)
+
+        } catch (e: Exception) {
+
+            Result.failure(e)
+
+        }
+
+    }
+
+
+
+    suspend fun notifyStudents(
+
+        date: String,
+
+        classes: List<AttendanceNotifyClass>
+
+    ): Result<AttendanceNotifyResult> = withContext(Dispatchers.IO) {
+
+        try {
+
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+
+            val response = api.notifyStudents(token, AttendanceNotifyRequest(date = date, classes = classes))
+
+            val data = response.data
+
+            if (!response.success || data == null) {
+
+                return@withContext Result.failure(Exception(response.message ?: "Failed to send notifications"))
+
+            }
+
+            Result.success(data)
+
+        } catch (e: Exception) {
+
+            Result.failure(e)
+
+        }
+
+    }
+
+
+
+    suspend fun getNotifyReceipts(
+
+        date: String,
+
+        grade: String,
+
+        section: String
+
+    ): Result<AttendanceNotifyReceipts> = withContext(Dispatchers.IO) {
+
+        try {
+
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+
+            val response = api.getNotifyReceipts(token, date, grade, section)
+
+            val data = response.data
+
+            if (!response.success || data == null) {
+
+                return@withContext Result.failure(Exception(response.message ?: "Failed to load notify status"))
+
+            }
+
+            Result.success(data)
 
         } catch (e: Exception) {
 

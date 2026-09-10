@@ -52,7 +52,8 @@ object SessionManager {
         }
 
         if (_token != null && _user != null) {
-            _authState.value = AuthState.Loading // Set to loading while we verify with backend
+            // Restore immediately so splash can go straight to home — no Loading spinner.
+            _authState.value = AuthState.Authenticated(_user!!, _token!!)
         } else {
             _authState.value = AuthState.Unauthenticated
         }

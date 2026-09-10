@@ -43,7 +43,8 @@ fun TeacherDashboardScreen(
     user: User,
     onNavigate: (String) -> Unit,
     onMenuClick: () -> Unit,
-    onNotificationClick: () -> Unit
+    onNotificationClick: () -> Unit,
+    unreadCount: Int = 0
 ) {
     val academicYearFilter = rememberAcademicYearFilter()
     val academicYearLabel = academicYearFilter.selectedYear?.name?.uppercase() ?: "ACADEMIC YEAR"
@@ -58,7 +59,7 @@ fun TeacherDashboardScreen(
             ) {
                 // Sunrise Academic Hero Header
                 item {
-                    TeacherHeroHeader(user, academicYearLabel, onMenuClick, onNotificationClick)
+                    TeacherHeroHeader(user, academicYearLabel, onMenuClick, onNotificationClick, unreadCount)
                 }
 
                 item {
@@ -88,6 +89,40 @@ fun TeacherDashboardScreen(
                             QuickActionItem("Exams", Icons.Default.Quiz, ErrorColor) { onNavigate(Route.Exams.path) }
                         }
 
+                        AppCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { onNavigate(Route.Notifications.path) }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(44.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = InfoColor.copy(alpha = 0.12f)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        BadgedBox(badge = {
+                                            if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
+                                        }) {
+                                            Icon(Icons.Default.Notifications, contentDescription = null, tint = InfoColor)
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Notification Center", style = MaterialTheme.typography.titleLarge, fontSize = 16.sp)
+                                    Text(
+                                        if (unreadCount > 0) "$unreadCount unread · open the full center"
+                                        else "Search, filters, and all alerts",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = SecondaryText
+                                    )
+                                }
+                            }
+                        }
+
                         // Today's Timetable Preview
                         DashboardSectionHeader("TODAY'S TIMETABLE", "View All") { onNavigate(Route.Timetable.path) }
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -115,7 +150,8 @@ fun TeacherHeroHeader(
     user: User,
     academicYearLabel: String,
     onMenuClick: () -> Unit,
-    onNotificationClick: () -> Unit
+    onNotificationClick: () -> Unit,
+    unreadCount: Int = 0
 ) {
     Box(
         modifier = Modifier
@@ -160,7 +196,9 @@ fun TeacherHeroHeader(
                     onClick = onNotificationClick,
                     modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    BadgedBox(badge = { Badge { Text("3") } }) {
+                    BadgedBox(badge = {
+                        if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
+                    }) {
                         Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
                     }
                 }

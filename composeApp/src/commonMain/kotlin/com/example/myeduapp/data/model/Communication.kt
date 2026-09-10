@@ -3,16 +3,6 @@ package com.example.myeduapp.data.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Notification(
-    val id: String,
-    val title: String,
-    val message: String,
-    val type: String,
-    val date: String,
-    val is_read: Boolean = false
-)
-
-@Serializable
 data class Holiday(
     val id: Int,
     val name: String,

@@ -7,6 +7,7 @@ sealed class Route(val path: String) {
     object MyStudents : Route("my_students")
     object Student360 : Route("student360")
     object Assignments : Route("assignments")
+    object Notifications : Route("notifications")
     object Marks : Route("marks")
     object Attendance : Route("attendance")
     object Fees : Route("fees")
