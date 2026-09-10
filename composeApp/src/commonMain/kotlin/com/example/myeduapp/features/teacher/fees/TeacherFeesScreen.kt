@@ -23,9 +23,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.FeeDue
 import com.example.myeduapp.data.model.FeePayment
+import com.example.myeduapp.data.model.FeeSummary
 import com.example.myeduapp.data.repository.FeeRepository
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.SuccessColor
@@ -49,6 +51,7 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
     val repository = remember { FeeRepository() }
     var dues by remember { mutableStateOf<List<FeeDue>>(emptyList()) }
     var payments by remember { mutableStateOf<List<FeePayment>>(emptyList()) }
+    var feeSummary by remember { mutableStateOf(FeeSummary()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedTab by remember { mutableStateOf(0) }
     
@@ -56,11 +59,11 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
 
     LaunchedEffect(Unit) {
         isLoading = true
-        val duesResult = repository.getStudentDues(user.id)
-        val paymentsResult = repository.getStudentPayments(user.id)
-        
-        if (duesResult.isSuccess) dues = duesResult.getOrNull() ?: emptyList()
-        if (paymentsResult.isSuccess) payments = paymentsResult.getOrNull() ?: emptyList()
+        repository.getStudentFees(user.id).onSuccess { fees ->
+            dues = fees.dues
+            payments = fees.payments
+            feeSummary = fees.summary
+        }
         
         isLoading = false
     }
@@ -85,7 +88,7 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            FeeSummaryHeader(dues.sumOf { it.amount })
+            FeeSummaryHeader(feeSummary)
             
             TabRow(
                 selectedTabIndex = selectedTab,
@@ -102,9 +105,7 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
             }
             
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                AppLoaderFullscreen(message = "Loading fees")
             } else {
                 when (selectedTab) {
                     0 -> DuesList(dues)
@@ -116,18 +117,37 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
 }
 
 @Composable
-fun FeeSummaryHeader(totalPending: Double) {
+fun FeeSummaryHeader(summary: FeeSummary) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(PrimaryBlue)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Total Pending", color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
-            Text("$${totalPending.format(2)}", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Fee Summary", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FeeSummaryStat(label = "Total", value = summary.displayTotal)
+                FeeSummaryStat(label = "Paid", value = summary.totalPaid)
+                FeeSummaryStat(label = "Remaining", value = summary.totalRemaining)
+            }
         }
+    }
+}
+
+@Composable
+private fun FeeSummaryStat(label: String, value: Double) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "₹${value.toLong()}",
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(label, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
     }
 }
 
@@ -183,11 +203,11 @@ fun DueCard(due: FeeDue) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(due.fee_type, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text("Due Date: ${due.due_date}", fontSize = 12.sp, color = SecondaryText)
+                Text("Due Date: ${due.displayDueDate}", fontSize = 12.sp, color = SecondaryText)
             }
             
             Column(horizontalAlignment = Alignment.End) {
-                Text("$${due.amount.format(2)}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ErrorColor)
+                Text("₹${due.displayAmount.format(2)}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = ErrorColor)
                 Surface(
                     color = WarningColor.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(16.dp)

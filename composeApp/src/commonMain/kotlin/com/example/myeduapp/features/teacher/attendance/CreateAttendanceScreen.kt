@@ -13,7 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
@@ -21,11 +24,11 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppButton
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.Background
 import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Attendance
 import com.example.myeduapp.data.model.SchoolClass
@@ -33,8 +36,7 @@ import com.example.myeduapp.data.model.Student
 import com.example.myeduapp.data.repository.AttendanceRepository
 import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.features.attendance.AttendanceFiltersPanel
-import com.example.myeduapp.features.attendance.AttendanceSectionHeader
-import com.example.myeduapp.features.attendance.AttendanceStatusGrid
+import com.example.myeduapp.features.attendance.AttendanceStatusRow
 import com.example.myeduapp.features.attendance.EmptyAttendanceState
 import com.example.myeduapp.features.attendance.rememberAttendanceClassSectionFilters
 import kotlinx.coroutines.launch
@@ -155,11 +157,7 @@ fun MarkAttendanceStep(
 
     Box(modifier = modifier.fillMaxSize()) {
         when {
-            isLoading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PrimaryBlue)
-                }
-            }
+            isLoading -> AppLoaderFullscreen(message = "Loading students")
             students.isEmpty() -> {
                 EmptyAttendanceState(
                     title = "No students found",
@@ -169,24 +167,32 @@ fun MarkAttendanceStep(
             }
             else -> {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    AttendanceSectionHeader(
-                        title = schoolClass.displayName,
-                        subtitle = "${students.size} students • ${DateUtils.formatDisplay(date)}",
-                        action = {
-                            BulkStatusDropdown(
-                                statuses = statuses,
-                                onApplyToAll = { status ->
-                                    students.forEach { attendanceStates[it.attendanceUserId] = status }
-                                }
-                            )
-                        }
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = AttendanceDimens.ScreenHorizontal, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${schoolClass.displayName} • ${students.size} students",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PrimaryBlue
+                        )
+                        BulkStatusDropdown(
+                            statuses = statuses,
+                            onApplyToAll = { status ->
+                                students.forEach { attendanceStates[it.attendanceUserId] = status }
+                            }
+                        )
+                    }
 
                     LazyColumn(
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(
                             horizontal = AttendanceDimens.ScreenHorizontal,
-                            vertical = 4.dp
+                            vertical = 2.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(AttendanceDimens.ListSpacing)
                     ) {
@@ -239,9 +245,10 @@ fun MarkAttendanceStep(
                             modifier = Modifier
                                 .padding(
                                     horizontal = AttendanceDimens.ScreenHorizontal,
-                                    vertical = 12.dp
+                                    vertical = 8.dp
                                 )
-                                .fillMaxWidth()
+                                .fillMaxWidth(),
+                            isLoading = isSubmitting
                         )
                     }
                 }
@@ -268,14 +275,13 @@ fun BulkStatusDropdown(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded }
     ) {
-        OutlinedButton(
+        TextButton(
             onClick = { expanded = true },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-            shape = RoundedCornerShape(10.dp)
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
         ) {
-            Text("Mark All", fontSize = 13.sp)
-            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text("Mark All", fontSize = 12.sp, color = PrimaryBlue)
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(16.dp), tint = PrimaryBlue)
         }
         ExposedDropdownMenu(
             expanded = expanded,
@@ -308,18 +314,18 @@ fun AttendanceMarkRow(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(1.dp)
     ) {
         Column(
-            modifier = Modifier.padding(AttendanceDimens.CardPadding),
-            verticalArrangement = Arrangement.spacedBy(AttendanceDimens.ItemSpacing)
+            modifier = Modifier.padding(AttendanceDimens.MarkRowPadding),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(AttendanceDimens.AvatarSize)
+                        .size(AttendanceDimens.MarkAvatarSize)
                         .clip(CircleShape)
                         .background(PrimaryBlue.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
@@ -328,26 +334,20 @@ fun AttendanceMarkRow(
                         student.roll_number ?: "?",
                         fontWeight = FontWeight.Bold,
                         color = PrimaryBlue,
-                        fontSize = 13.sp
+                        fontSize = 11.sp
                     )
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        student.full_name,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1
-                    )
-                    Text(
-                        "Roll ${student.roll_number ?: "—"}",
-                        fontSize = 12.sp,
-                        color = SecondaryText
-                    )
-                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    student.full_name,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
             }
 
-            AttendanceStatusGrid(
+            AttendanceStatusRow(
                 statuses = statuses,
                 selected = status,
                 onSelected = onStatusChange
@@ -356,11 +356,21 @@ fun AttendanceMarkRow(
             OutlinedTextField(
                 value = remarks,
                 onValueChange = onRemarksChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Remarks / Note") },
-                placeholder = { Text("Optional note for this student") },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(
+                        min = AttendanceDimens.MarkRemarksHeight,
+                        max = AttendanceDimens.MarkRemarksHeight * 2
+                    ),
+                placeholder = { Text("Remarks", fontSize = 12.sp) },
+                minLines = 1,
+                maxLines = 3,
+                shape = RoundedCornerShape(8.dp),
+                textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Default
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedContainerColor = Background,
                     focusedContainerColor = Background,

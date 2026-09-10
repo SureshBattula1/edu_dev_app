@@ -2,6 +2,8 @@ package com.example.myeduapp.data.model
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 @Serializable
 data class DashboardResponse(
@@ -38,3 +40,16 @@ data class FeatureItemModel(
     val route: String,
     val iconName: String
 )
+
+fun DashboardStats?.attendancePercent(): Int =
+    this?.attendance?.students?.percentage?.toInt() ?: 0
+
+fun DashboardStats?.pendingFeeAmount(): Double {
+    val raw = this?.fees?.get("total_pending")
+    return (raw as? JsonPrimitive)
+        ?.contentOrNull
+        ?.toDoubleOrNull()
+        ?: 0.0
+}
+
+fun DashboardStats?.pendingFeeLabel(): String = "₹${pendingFeeAmount().toLong()}"

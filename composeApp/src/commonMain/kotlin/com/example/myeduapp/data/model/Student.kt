@@ -14,9 +14,21 @@ data class Student(
     val roll_number: String? = null,
     val grade: String? = null,
     val section: String? = null,
+    val current_grade: String? = null,
+    val current_section: String? = null,
+    val grade_label: String? = null,
+    val current_grade_label: String? = null,
+    val email: String? = null,
+    val phone: String? = null,
+    val gender: String? = null,
+    val student_status: String? = null,
     val avatar: String? = null
 ) {
     val full_name: String get() = "$first_name $last_name"
+
+    val displayGrade: String? get() = grade?.takeIf { it.isNotBlank() } ?: current_grade
+    val displaySection: String? get() = section?.takeIf { it.isNotBlank() } ?: current_section
+    val displayGradeLabel: String? get() = grade_label ?: current_grade_label
 
     /** User id for attendance bulk API (matches web: user_id || id). */
     val attendanceUserId: String

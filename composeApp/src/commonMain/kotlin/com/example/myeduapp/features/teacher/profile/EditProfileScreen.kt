@@ -14,6 +14,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.data.repository.AuthRepository
+import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import kotlinx.coroutines.launch
 
@@ -109,7 +110,7 @@ class EditProfileScreen : Screen {
                     enabled = !isLoading && firstName.isNotBlank() && lastName.isNotBlank()
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        AppLoaderCompact(size = 28.dp)
                     } else {
                         Text("Save Changes")
                     }

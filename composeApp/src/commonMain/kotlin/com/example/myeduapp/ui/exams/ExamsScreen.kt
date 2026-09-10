@@ -26,6 +26,7 @@ import com.example.myeduapp.data.model.ExamResult
 import com.example.myeduapp.data.repository.ExamRepository
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.SuccessColor
@@ -99,9 +100,7 @@ fun ExamsScreenContent(onBack: (() -> Unit)? = null) {
             }
             
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                AppLoaderFullscreen(message = "Loading exams")
             } else {
                 when (selectedTab) {
                     0 -> UpcomingExamsList(upcomingExams)

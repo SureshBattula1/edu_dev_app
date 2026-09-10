@@ -19,6 +19,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.Assignment
@@ -56,9 +57,7 @@ class AssignmentsScreen : Screen {
             }
         ) { padding ->
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PrimaryBlue)
-                }
+                AppLoaderFullscreen(message = "Loading assignments")
             } else if (assignments.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No assignments found", color = SecondaryText)

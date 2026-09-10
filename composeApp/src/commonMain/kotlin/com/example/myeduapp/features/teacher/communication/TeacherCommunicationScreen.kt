@@ -24,6 +24,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.Notification
 import com.example.myeduapp.data.model.Holiday
 import com.example.myeduapp.data.repository.CommunicationRepository
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
@@ -94,9 +95,7 @@ fun TeacherCommunicationScreenContent(onBack: (() -> Unit)? = null) {
             }
             
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                AppLoaderFullscreen(message = "Loading updates")
             } else {
                 when (selectedTab) {
                     0 -> NotificationsList(notifications)

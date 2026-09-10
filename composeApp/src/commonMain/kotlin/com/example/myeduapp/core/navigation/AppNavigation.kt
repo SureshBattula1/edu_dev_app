@@ -71,7 +71,20 @@ object AppNavigation {
                 items.add(NavItem("My Leaves", Icons.Default.EventNote, Route.Leaves))
             }
             UserRole.STUDENT -> {
+                items.add(NavItem("My Profile", Icons.Default.Person, Route.Student360))
                 items.add(NavItem("My Attendance", Icons.Default.CheckCircle, Route.Attendance))
+                items.add(NavItem("My Leaves", Icons.Default.EventNote, Route.Leaves))
+            }
+            UserRole.STAFF -> {
+                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
+            }
+            UserRole.BRANCH_ADMIN, UserRole.SUPER_ADMIN -> {
+                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance))
+                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
+                items.add(NavItem("Timetable", Icons.Default.Schedule, Route.Timetable))
             }
             else -> {
                 items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))

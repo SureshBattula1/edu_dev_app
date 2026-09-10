@@ -23,6 +23,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
+import com.example.myeduapp.core.ui.components.AppLoader
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
@@ -139,10 +141,12 @@ class MyStudentsScreen : Screen {
                 }
 
                 if (academicYearFilter.isLoading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        color = PrimaryBlue
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AppLoader(size = 56.dp, message = "Loading years")
+                    }
                 } else if (academicYearFilter.error != null) {
                     Text(
                         text = academicYearFilter.error,
@@ -190,9 +194,7 @@ class MyStudentsScreen : Screen {
                 }
 
                 if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = PrimaryBlue)
-                    }
+                    AppLoaderFullscreen(message = "Loading students")
                 } else if (students.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(

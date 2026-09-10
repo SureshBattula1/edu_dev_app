@@ -19,6 +19,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.Announcement
 import com.example.myeduapp.data.repository.CommunicationRepository
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 
@@ -69,7 +70,7 @@ fun TeacherNoticesScreenContent(onBack: (() -> Unit)? = null) {
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                AppLoaderFullscreen(message = "Loading notices")
             } else if (error != null) {
                 Text("Error: $error", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.error)
             } else if (noticeList.isEmpty()) {

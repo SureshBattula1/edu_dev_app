@@ -17,9 +17,15 @@ class AuthRepository {
             println("AuthRepository: Attempting login for $identifier")
             val response = authApi.login(identifier.trim(), password)
             if (response.success && response.user != null && response.access_token != null) {
-                println("AuthRepository: Login SUCCESS for ${response.user.email}")
-                SessionManager.startSession(response.user, response.access_token)
-                Result.success(response)
+                val token = response.access_token
+                val user = try {
+                    authApi.getMe(token)
+                } catch (_: Exception) {
+                    response.user
+                }
+                println("AuthRepository: Login SUCCESS for ${user.email}")
+                SessionManager.startSession(user, token)
+                Result.success(response.copy(user = user))
             } else {
                 println("AuthRepository: Login FAILED - ${response.message}")
                 Result.failure(Exception(response.message))

@@ -12,8 +12,9 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.myeduapp.data.repository.AuthRepository
+import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
+import com.example.myeduapp.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
 class ChangePasswordScreen : Screen {
@@ -114,7 +115,7 @@ class ChangePasswordScreen : Screen {
                     enabled = !isLoading && isFormValid
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        AppLoaderCompact(size = 28.dp)
                     } else {
                         Text("Update Password")
                     }

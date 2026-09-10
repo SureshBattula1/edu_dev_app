@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -38,14 +39,19 @@ import com.example.myeduapp.features.teacher.dashboard.DashboardScreen
 import com.example.myeduapp.features.teacher.attendance.*
 import com.example.myeduapp.features.attendance.AttendanceHubScreen
 import com.example.myeduapp.features.teacher.fees.*
-import com.example.myeduapp.features.teacher.leaves.*
+import com.example.myeduapp.features.teacher.leaves.TeacherLeaveScreen
+import com.example.myeduapp.features.leaves.LeaveHubScreen
 import com.example.myeduapp.features.teacher.timetable.*
 import com.example.myeduapp.features.teacher.profile.*
+import com.example.myeduapp.features.teacher.student360.Student360Screen
 import com.example.myeduapp.core.ui.theme.MyEduAppTheme
 import com.example.myeduapp.ui.screens.PlaceholderScreen
 import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.Route
+import com.example.myeduapp.core.ui.components.NetworkAvatar
 import com.example.myeduapp.data.repository.AuthRepository
+import com.example.myeduapp.data.repository.StudentRepository
+import com.example.myeduapp.data.model.User
 import com.example.myeduapp.data.model.UserRole
 import kotlinx.coroutines.launch
 
@@ -80,6 +86,36 @@ fun App() {
             }
         }
     }
+}
+
+@Composable
+private fun DrawerProfileAvatar(user: User, role: UserRole) {
+    var avatarUrl by remember(user.id) { mutableStateOf(user.avatar?.takeIf { it.isNotBlank() }) }
+
+    LaunchedEffect(user.id, user.avatar, role) {
+        avatarUrl = user.avatar?.takeIf { it.isNotBlank() }
+        if (avatarUrl == null && role == UserRole.STUDENT) {
+            StudentRepository().resolveStudentForUser(user)
+                .onSuccess { avatarUrl = it.avatar?.takeIf { a -> a.isNotBlank() } }
+        }
+    }
+
+    NetworkAvatar(
+        url = avatarUrl,
+        modifier = Modifier
+            .size(64.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+        contentDescription = user.name,
+        placeholder = {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+    )
 }
 
 class MainScreen : Screen {
@@ -142,17 +178,15 @@ class MainScreen : Screen {
                                 .fillMaxWidth()
                                 .clickable {
                                     scope.launch { drawerState.close() }
-                                    navigator.push(ProfileScreen())
+                                    if (role == UserRole.STUDENT) {
+                                        navigator.push(Student360Screen())
+                                    } else {
+                                        navigator.push(ProfileScreen())
+                                    }
                                 }
                                 .padding(24.dp)
                         ) {
-                            Box(
-                                modifier = Modifier.size(64.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
-                            }
+                            DrawerProfileAvatar(user = user, role = role)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(user.name, style = MaterialTheme.typography.titleLarge)
                             Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -172,10 +206,11 @@ class MainScreen : Screen {
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
                                         Route.Exams -> navigator.push(TeacherExamsScreen())
                                         Route.Marks -> navigator.push(MarksScreen())
-                                        Route.Leaves -> navigator.push(TeacherLeaveScreen())
+                                        Route.Leaves -> navigator.push(LeaveHubScreen())
                                         Route.Timetable -> navigator.push(TeacherTimetableScreen())
                                         Route.Notices -> navigator.push(TeacherNoticesScreen())
                                         Route.Profile -> navigator.push(ProfileScreen())
+                                        Route.Student360 -> navigator.push(Student360Screen())
                                         Route.Attendance -> navigator.push(AttendanceHubScreen())
                                         Route.Fees -> navigator.push(TeacherFeesScreen())
                                         else -> navigator.push(PlaceholderScreen(item.label))
@@ -221,7 +256,7 @@ class MainScreen : Screen {
                                 Route.Marks.path -> MarksScreen()
                                 Route.Attendance.path -> AttendanceHubScreen()
                                 Route.Fees.path -> TeacherFeesScreen()
-                                Route.Leaves.path -> TeacherLeaveScreen()
+                                Route.Leaves.path -> LeaveHubScreen()
                                 Route.Timetable.path -> TeacherTimetableScreen()
                                 Route.Notices.path -> TeacherCommunicationScreen()
                                 else -> PlaceholderScreen(route.replace("_", " ").capitalize())
@@ -236,11 +271,12 @@ class MainScreen : Screen {
                         onNavigate = { route ->
                             val targetScreen: Screen = when(route) {
                                 Route.Profile.path -> ProfileScreen()
+                                Route.Student360.path -> Student360Screen()
                                 Route.MyStudents.path -> MyStudentsScreen()
                                 Route.Attendance.path -> AttendanceHubScreen()
                                 Route.Fees.path -> TeacherFeesScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
-                                Route.Leaves.path -> TeacherLeaveScreen()
+                                Route.Leaves.path -> LeaveHubScreen()
                                 Route.Timetable.path -> TeacherTimetableScreen()
                                 Route.Notices.path -> TeacherCommunicationScreen()
                                 else -> PlaceholderScreen(route.replace("_", " ").capitalize())

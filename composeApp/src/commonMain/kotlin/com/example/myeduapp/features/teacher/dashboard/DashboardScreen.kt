@@ -25,6 +25,8 @@ import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.data.repository.DashboardRepository
 import com.example.myeduapp.data.model.DashboardResponse
+import com.example.myeduapp.data.model.attendancePercent
+import com.example.myeduapp.data.model.pendingFeeLabel
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
@@ -35,6 +37,7 @@ import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.NavItem
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.AppCard
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -66,9 +69,7 @@ fun DashboardScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { _ ->
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = PrimaryBlue)
-            }
+            AppLoaderFullscreen(message = "Loading dashboard")
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -184,25 +185,26 @@ fun StatsSection(role: UserRole, data: DashboardResponse?) {
                 }
                 UserRole.TEACHER -> {
                     DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    val attendance = stats?.attendance?.students?.percentage ?: 0f
-                    DashboardStatCard("Attendance", "${attendance.toInt()}%", if (attendance > 75) SuccessColor else WarningColor, Modifier.weight(1f))
+                    val attendance = stats.attendancePercent()
+                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) SuccessColor else WarningColor, Modifier.weight(1f))
                 }
                 UserRole.ACCOUNTANT -> {
-                    DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", SuccessColor, Modifier.weight(1f))
-                    DashboardStatCard("Pending", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "₹0", SuccessColor, Modifier.weight(1f))
+                    DashboardStatCard("Pending", stats.pendingFeeLabel(), ErrorColor, Modifier.weight(1f))
                 }
                 UserRole.STUDENT -> {
-                    val attendance = stats?.attendance?.students?.percentage ?: 0f
-                    DashboardStatCard("Attendance", "${attendance.toInt()}%", if (attendance > 75) SuccessColor else ErrorColor, Modifier.weight(1f))
-                    DashboardStatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    val attendance = stats.attendancePercent()
+                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) SuccessColor else ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), ErrorColor, Modifier.weight(1f))
                 }
                 UserRole.STAFF -> {
                     DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
                     DashboardStatCard("Today Presence", stats?.attendance?.teachers?.present_days?.toString() ?: "0", SuccessColor, Modifier.weight(1f))
                 }
                 UserRole.PARENT -> {
-                    DashboardStatCard("Children", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", PrimaryBlue, Modifier.weight(1f))
-                    DashboardStatCard("Pending Fee", stats?.fees?.get("total_pending")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "$0", ErrorColor, Modifier.weight(1f))
+                    val attendance = stats.attendancePercent()
+                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) SuccessColor else ErrorColor, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), ErrorColor, Modifier.weight(1f))
                 }
             }
         }

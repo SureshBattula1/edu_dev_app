@@ -9,8 +9,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
+import com.example.myeduapp.core.ui.components.AppLoader
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import kotlinx.coroutines.delay
 
 class SplashScreen : Screen {
     @Composable
@@ -34,7 +34,7 @@ class SplashScreen : Screen {
                 )
                 
                 Spacer(modifier = Modifier.height(48.dp))
-                CircularProgressIndicator(color = PrimaryBlue)
+                AppLoader(size = 96.dp, message = "Getting things ready")
             }
         }
     }

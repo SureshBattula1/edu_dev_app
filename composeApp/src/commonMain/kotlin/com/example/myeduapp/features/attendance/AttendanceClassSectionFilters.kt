@@ -1,6 +1,7 @@
 package com.example.myeduapp.features.attendance
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.myeduapp.core.ui.components.AppLoader
 import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.theme.AttendanceDimens
@@ -126,6 +128,12 @@ fun AttendanceFiltersPanel(
                 fontWeight = FontWeight.SemiBold,
                 color = PrimaryBlue
             )
+
+            if (state.isLoadingGrades) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    AppLoader(size = 56.dp, message = "Loading classes")
+                }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

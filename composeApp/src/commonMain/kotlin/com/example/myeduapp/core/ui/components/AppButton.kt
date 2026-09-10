@@ -26,11 +26,7 @@ fun AppButton(
         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
+            AppLoaderCompact(size = 28.dp)
         } else {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

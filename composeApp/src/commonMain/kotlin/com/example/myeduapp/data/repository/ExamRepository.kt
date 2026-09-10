@@ -21,10 +21,11 @@ class ExamRepository {
         }
     }
 
-    suspend fun getStudentResults(studentId: Int): Result<List<ExamResult>> = withContext(Dispatchers.IO) {
+    /** @param studentUserId users.id — exam_results.student_id references users table */
+    suspend fun getStudentResults(studentUserId: Int): Result<List<ExamResult>> = withContext(Dispatchers.IO) {
         try {
             val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
-            val response = api.getStudentResults(token, studentId)
+            val response = api.getStudentResults(token, studentUserId)
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)

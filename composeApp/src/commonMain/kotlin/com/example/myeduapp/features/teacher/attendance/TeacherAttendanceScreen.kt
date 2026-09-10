@@ -14,6 +14,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.Background
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
@@ -91,9 +92,7 @@ fun TeacherAttendanceScreenContent(onBack: (() -> Unit)? = null, onMarkAttendanc
                     modifier = Modifier.fillMaxSize()
                 )
             } else if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = PrimaryBlue)
-                }
+                AppLoaderFullscreen(message = "Loading attendance")
             } else if (attendanceRecords.isEmpty()) {
                 EmptyAttendanceState(
                     title = "No attendance marked",

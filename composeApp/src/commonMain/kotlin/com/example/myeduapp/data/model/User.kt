@@ -16,7 +16,8 @@ data class User(
     val avatar: String? = null,
     val is_active: Boolean = true,
     val permissions: List<String> = emptyList(),
-    
+    val user_type_id: Int? = null,
+
     // Additional Profile Fields
     val employee_id: String? = null,
     val dob: String? = null,

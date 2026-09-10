@@ -7,6 +7,9 @@ object ApiConfig {
     private const val BASE_URL_LOCAL = "http://localhost:8000/api/"
     
     val BASE_URL: String = BASE_URL_EMULATOR // Default to emulator for now
+
+    /** Origin for static files (storage/uploads), without /api suffix. */
+    val SERVER_ORIGIN: String = BASE_URL.removeSuffix("/").removeSuffix("/api")
     
     const val LOGIN = "login"
     const val REGISTER = "register"

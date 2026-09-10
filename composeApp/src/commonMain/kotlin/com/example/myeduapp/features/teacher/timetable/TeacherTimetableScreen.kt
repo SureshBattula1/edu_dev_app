@@ -23,6 +23,7 @@ import com.example.myeduapp.data.model.TimetableSlot
 import com.example.myeduapp.data.repository.TimetableRepository
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
+import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 
@@ -94,9 +95,7 @@ fun TeacherTimetableScreenContent(onBack: (() -> Unit)? = null) {
             }
             
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                AppLoaderFullscreen(message = "Loading timetable")
             } else {
                 val daySlots = slots.filter { it.day.equals(selectedDay, ignoreCase = true) }
                 

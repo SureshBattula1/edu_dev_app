@@ -91,7 +91,8 @@ class MarkTeacherSelfAttendanceScreen : Screen {
                             isSubmitting = false
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    isLoading = isSubmitting
                 )
             }
         }

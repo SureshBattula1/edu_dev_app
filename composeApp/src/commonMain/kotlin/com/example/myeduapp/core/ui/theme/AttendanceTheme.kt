@@ -16,11 +16,16 @@ object AttendanceDimens {
     val ScreenHorizontal = 16.dp
     val ScreenVertical = 8.dp
     val CardPadding = 16.dp
+    val MarkRowPadding = 8.dp
     val ItemSpacing = 12.dp
-    val ListSpacing = 10.dp
+    val ListSpacing = 6.dp
     val ChipSpacing = 8.dp
+    val MarkChipSpacing = 3.dp
     val AvatarSize = 40.dp
+    val MarkAvatarSize = 28.dp
     val ButtonHeight = 52.dp
+    val MarkChipHeight = 28.dp
+    val MarkRemarksHeight = 32.dp
 }
 
 fun attendanceStatusColor(status: String): Color = when (status) {
@@ -35,6 +40,17 @@ fun attendanceStatusColor(status: String): Color = when (status) {
 fun attendanceStatusShortLabel(status: String): String = when (status) {
     "Half-Day" -> "Half-Day"
     "Sick Leave" -> "Sick Leave"
+    else -> status
+}
+
+/** Compact labels for single-row status picker on mark attendance screen. */
+fun attendanceStatusRowLabel(status: String): String = when (status) {
+    "Present" -> "Present"
+    "Absent" -> "Absent"
+    "Late" -> "Late"
+    "Half-Day" -> "Half"
+    "Sick Leave" -> "Sick"
+    "Leave" -> "Leave"
     else -> status
 }
 

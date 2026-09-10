@@ -2,6 +2,10 @@ package com.example.myeduapp.data.repository
 
 import com.example.myeduapp.core.network.StudentApi
 import com.example.myeduapp.data.model.Student
+import com.example.myeduapp.data.model.StudentDetail
+import com.example.myeduapp.data.model.User
+import com.example.myeduapp.data.model.toStudent
+import com.example.myeduapp.data.model.toStudentSeed
 import com.example.myeduapp.core.datastore.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -9,6 +13,51 @@ import kotlinx.coroutines.withContext
 
 class StudentRepository {
     private val api = StudentApi()
+
+    suspend fun resolveStudentForUser(user: User): Result<Student> = withContext(Dispatchers.IO) {
+        val studentId = user.user_type_id?.toString()
+        if (studentId != null) {
+            getStudentDetail(studentId).onSuccess { detail ->
+                return@withContext Result.success(detail.toStudent())
+            }
+        }
+        getStudentDetailByUserId(user.id).onSuccess { detail ->
+            return@withContext Result.success(detail.toStudent())
+        }
+        Result.success(user.toStudentSeed())
+    }
+
+    suspend fun getStudentDetailByUserId(userId: Int): Result<StudentDetail> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getStudentByUserId(token, userId)
+            val data = response.data
+            if (!response.success || data == null) {
+                return@withContext Result.failure(
+                    Exception(response.message ?: "Student not found")
+                )
+            }
+            Result.success(data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getStudentDetail(studentId: String): Result<StudentDetail> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getStudentDetail(token, studentId)
+            val data = response.data
+            if (!response.success || data == null) {
+                return@withContext Result.failure(
+                    Exception(response.message ?: "Student not found")
+                )
+            }
+            Result.success(data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     suspend fun getStudents(
         query: String? = null,
