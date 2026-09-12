@@ -28,9 +28,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.ui.components.AppCard
-import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.core.ui.theme.PrimaryText
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.data.model.UserRole
 import androidx.compose.material.icons.filled.Info
@@ -67,17 +64,18 @@ fun ProfileScreenContent(
     val user = (authState as? AuthState.Authenticated)?.user ?: return
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Profile", "Professional", "Activity")
+    val colorScheme = MaterialTheme.colorScheme
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
                         "TEACHER PROFILE", 
                         style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White,
+                        color = colorScheme.onPrimary,
                         fontSize = 18.sp
                     )
                 },
@@ -85,21 +83,21 @@ fun ProfileScreenContent(
                     if (onBack != null) {
                         IconButton(
                             onClick = onBack,
-                            modifier = Modifier.padding(start = 8.dp).size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            modifier = Modifier.padding(start = 8.dp).size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colorScheme.onPrimary)
                         }
                     }
                 },
                 actions = {
                     IconButton(
                         onClick = onNavigateToEdit,
-                        modifier = Modifier.padding(end = 8.dp).size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        modifier = Modifier.padding(end = 8.dp).size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = colorScheme.onPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryBlue),
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.primary),
                 windowInsets = WindowInsets.statusBars
             )
         }
@@ -163,6 +161,7 @@ fun ProfileScreenContent(
 
 @Composable
 fun ProfileHeroHeader(user: User) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -170,7 +169,7 @@ fun ProfileHeroHeader(user: User) {
             .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF007CC4), Color(0xFF299EF2))
+                    colors = listOf(colorScheme.primary, colorScheme.secondary)
                 )
             ),
         contentAlignment = Alignment.Center
@@ -179,16 +178,16 @@ fun ProfileHeroHeader(user: User) {
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    .background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
                     .padding(4.dp)
-                    .background(Color.White, CircleShape),
+                    .background(colorScheme.surface, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     Icons.Default.Person,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
-                    tint = PrimaryBlue
+                    tint = colorScheme.primary
                 )
             }
             
@@ -197,12 +196,12 @@ fun ProfileHeroHeader(user: User) {
             Text(
                 text = user.name.ifBlank { "NA" }.uppercase(),
                 style = MaterialTheme.typography.headlineLarge,
-                color = Color.White,
+                color = colorScheme.onPrimary,
                 fontSize = 20.sp
             )
             
             Surface(
-                color = Color.White.copy(alpha = 0.2f),
+                color = colorScheme.onPrimary.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(50),
                 modifier = Modifier.padding(top = 4.dp)
             ) {
@@ -210,7 +209,7 @@ fun ProfileHeroHeader(user: User) {
                     text = user.userRole.name.replace("_", " "),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
+                    color = colorScheme.onPrimary,
                     fontSize = 10.sp
                 )
             }
@@ -224,18 +223,19 @@ fun ProfileTabs(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 24.dp, start = 24.dp, end = 24.dp),
         shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        color = colorScheme.surface,
+        border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.5f))
     ) {
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color.Transparent,
-            contentColor = PrimaryBlue,
+            contentColor = colorScheme.primary,
             divider = {},
             indicator = {},
             modifier = Modifier.padding(4.dp)
@@ -247,13 +247,13 @@ fun ProfileTabs(
                     onClick = { onTabSelected(index) },
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) PrimaryBlue else Color.Transparent)
+                        .background(if (isSelected) colorScheme.primary else Color.Transparent)
                         .height(40.dp),
                     text = {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleSmall,
-                            color = if (isSelected) Color.White else Color(0xFF64748B),
+                            color = if (isSelected) colorScheme.onPrimary else colorScheme.onSurfaceVariant,
                             maxLines = 1
                         )
                     }
@@ -265,6 +265,7 @@ fun ProfileTabs(
 
 @Composable
 fun ProfileInfoRow(label: String, value: String) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -275,25 +276,26 @@ fun ProfileInfoRow(label: String, value: String) {
             text = label,
             modifier = Modifier.weight(1.2f),
             style = MaterialTheme.typography.bodyMedium,
-            color = PrimaryText
+            color = colorScheme.onSurface
         )
         Text(
             text = ":",
             modifier = Modifier.width(20.dp),
             style = MaterialTheme.typography.bodyMedium,
-            color = PrimaryText
+            color = colorScheme.onSurface
         )
         Text(
             text = value,
             modifier = Modifier.weight(2f),
             style = MaterialTheme.typography.bodyLarge,
-            color = SecondaryText
+            color = colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
 fun PersonalDetailsSection(user: User, onChangePassword: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Column {
         ProfileInfoRow("Full Name", user.name.ifBlank { "NA" })
         ProfileInfoRow("Employee ID", user.employee_id ?: "NA")
@@ -309,7 +311,10 @@ fun PersonalDetailsSection(user: User, onChangePassword: () -> Unit) {
             onClick = onChangePassword,
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9), contentColor = PrimaryBlue)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorScheme.surfaceVariant, 
+                contentColor = colorScheme.primary
+            )
         ) {
             Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(8.dp))
@@ -334,17 +339,18 @@ fun ProfessionalDetailsSection(user: User) {
 
 @Composable
 fun ContentActivitySection(user: User) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         ActivitySectionHeader("SUBJECTS TEACHING")
         if (user.subjects.isEmpty()) {
-            Text("NA", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
+            Text("NA", style = MaterialTheme.typography.bodyLarge, color = colorScheme.onSurfaceVariant)
         } else {
             SimpleTagCloud(user.subjects)
         }
         
         ActivitySectionHeader("CLASSES")
         if (user.classes.isEmpty()) {
-            Text("NA", style = MaterialTheme.typography.bodyLarge, color = SecondaryText)
+            Text("NA", style = MaterialTheme.typography.bodyLarge, color = colorScheme.onSurfaceVariant)
         } else {
             SimpleTagCloud(user.classes)
         }
@@ -359,7 +365,6 @@ fun ContentActivitySection(user: User) {
         
         ActivitySectionHeader("RECENT ACTIVITY")
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            // Activity remains static or we show a placeholder since backend activity feed isn't wired yet
             RecentActivityItem("No recent activity", "NA", Icons.Default.Info)
         }
     }
@@ -370,23 +375,25 @@ fun ActivitySectionHeader(title: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.headlineMedium,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(bottom = 12.dp)
     )
 }
 
 @Composable
 fun SimpleTagCloud(tags: List<String>) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         tags.forEach { tag ->
             Surface(
-                color = Color(0xFFE8F2FF),
+                color = colorScheme.primary.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(50),
-                border = BorderStroke(1.dp, Color(0xFF007CC4).copy(alpha = 0.2f))
+                border = BorderStroke(1.dp, colorScheme.primary.copy(alpha = 0.2f))
             ) {
                 Text(
                     text = tag,
                     style = MaterialTheme.typography.titleSmall,
-                    color = PrimaryBlue,
+                    color = colorScheme.primary,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
@@ -396,6 +403,7 @@ fun SimpleTagCloud(tags: List<String>) {
 
 @Composable
 fun ActivityGrid(items: List<Pair<String, ImageVector>>) {
+    val colorScheme = MaterialTheme.colorScheme
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items.chunked(2).forEach { rowItems ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -407,9 +415,9 @@ fun ActivityGrid(items: List<Pair<String, ImageVector>>) {
                             modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(item.second, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                            Icon(item.second, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(item.first, style = MaterialTheme.typography.titleLarge, fontSize = 13.sp)
+                            Text(item.first, style = MaterialTheme.typography.titleLarge, color = colorScheme.onSurface, fontSize = 13.sp)
                         }
                     }
                 }
@@ -423,20 +431,21 @@ fun ActivityGrid(items: List<Pair<String, ImageVector>>) {
 
 @Composable
 fun RecentActivityItem(title: String, time: String, icon: ImageVector) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF1F5F9)),
+                .background(colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(time, style = MaterialTheme.typography.bodySmall, color = SecondaryText)
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = colorScheme.onSurface, fontWeight = FontWeight.Medium)
+            Text(time, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
         }
     }
 }

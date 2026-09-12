@@ -63,11 +63,12 @@ class StudentRepository {
         query: String? = null,
         grade: String? = null,
         section: String? = null,
-        academicYearId: String? = SessionManager.academicYearId
+        academicYearId: String? = SessionManager.academicYearId,
+        branchId: Int? = null
     ): Result<List<Student>> = withContext(Dispatchers.IO) {
         try {
             val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
-            val response = api.getStudents(token, query, grade, section, academicYearId)
+            val response = api.getStudents(token, query, grade, section, academicYearId, branchId)
             Result.success(response.data)
         } catch (e: Exception) {
             Result.failure(e)
@@ -77,7 +78,8 @@ class StudentRepository {
     suspend fun getStudentsByClass(
         grade: String,
         section: String,
-        academicYearId: String? = SessionManager.academicYearId
+        academicYearId: String? = SessionManager.academicYearId,
+        branchId: Int? = null
     ): Result<List<Student>> = withContext(Dispatchers.IO) {
         try {
             val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
@@ -90,6 +92,7 @@ class StudentRepository {
                     grade = grade,
                     section = section,
                     academicYearId = academicYearId,
+                    branchId = branchId,
                     page = page,
                     perPage = 100
                 )

@@ -30,6 +30,7 @@ import com.example.myeduapp.features.auth.login.LoginScreen
 import com.example.myeduapp.features.auth.splash.SplashContent
 import com.example.myeduapp.features.teacher.dashboard.TeacherDashboardScreen
 import com.example.myeduapp.features.teacher.students.MyStudentsScreen
+import com.example.myeduapp.features.teacher.teachers.MyTeachersScreen
 import com.example.myeduapp.features.teacher.assignments.AssignmentsScreen
 import com.example.myeduapp.features.notifications.IncomingNotificationBanner
 import com.example.myeduapp.features.notifications.NotificationCenterScreen
@@ -82,12 +83,14 @@ fun App() {
             } else {
                 when (authState) {
                     is AuthState.Idle, is AuthState.Loading -> {
-                        // No spinner — brief white hold while auth settles (rare).
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.White)
-                        )
+                                .background(MaterialTheme.colorScheme.background),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                     is AuthState.Authenticated -> {
                         Navigator(MainScreen()) { navigator ->
@@ -108,6 +111,7 @@ fun App() {
 @Composable
 private fun DrawerProfileAvatar(user: User, role: UserRole) {
     var avatarUrl by remember(user.id) { mutableStateOf(user.avatar?.takeIf { it.isNotBlank() }) }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(user.id, user.avatar, role) {
         avatarUrl = user.avatar?.takeIf { it.isNotBlank() }
@@ -122,15 +126,22 @@ private fun DrawerProfileAvatar(user: User, role: UserRole) {
         modifier = Modifier
             .size(64.dp)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
+            .background(colorScheme.primary.copy(alpha = 0.1f)),
         contentDescription = user.name,
         placeholder = {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(40.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = colorScheme.onPrimary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
     )
 }
@@ -142,6 +153,7 @@ class MainScreen : Screen {
         val authState by SessionManager.authState.collectAsState()
         val authRepository = remember { AuthRepository() }
         val scope = rememberCoroutineScope()
+        val colorScheme = MaterialTheme.colorScheme
         
         val user = (authState as? AuthState.Authenticated)?.user ?: return
         val role = user.userRole
@@ -188,7 +200,7 @@ class MainScreen : Screen {
                             }
                         }
                     ) {
-                        Text("Logout", color = MaterialTheme.colorScheme.error)
+                        Text("Logout", color = colorScheme.error)
                     }
                 },
                 dismissButton = {
@@ -205,7 +217,7 @@ class MainScreen : Screen {
             drawerState = drawerState,
             drawerContent = {
                 ModalDrawerSheet(
-                    drawerContainerColor = Color.White,
+                    drawerContainerColor = colorScheme.surface,
                     drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
                 ) {
                     Column(
@@ -229,10 +241,10 @@ class MainScreen : Screen {
                         ) {
                             DrawerProfileAvatar(user = user, role = role)
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(user.name, style = MaterialTheme.typography.titleLarge)
-                            Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(user.name, style = MaterialTheme.typography.titleLarge, color = colorScheme.onSurface)
+                            Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
                         }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = colorScheme.outline.copy(alpha = 0.5f))
                         
                         drawerItems.forEach { item ->
                             NavigationDrawerItem(
@@ -244,6 +256,7 @@ class MainScreen : Screen {
                                     when (item.route) {
                                         Route.Dashboard -> { /* Already on dashboard root */ }
                                         Route.MyStudents -> navigator.push(MyStudentsScreen())
+                                        Route.Teachers -> navigator.push(MyTeachersScreen())
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
                                         Route.Notifications -> navigator.push(NotificationCenterScreen())
                                         Route.Exams -> navigator.push(TeacherExamsScreen())
@@ -261,7 +274,8 @@ class MainScreen : Screen {
                                 modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                                 colors = NavigationDrawerItemDefaults.colors(
                                     unselectedContainerColor = Color.Transparent,
-                                    unselectedIconColor = Color(0xFF64748B)
+                                    unselectedIconColor = colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = colorScheme.onSurface
                                 )
                             )
                         }
@@ -278,7 +292,8 @@ class MainScreen : Screen {
                             },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                             colors = NavigationDrawerItemDefaults.colors(
-                                unselectedIconColor = MaterialTheme.colorScheme.error
+                                unselectedIconColor = colorScheme.error,
+                                unselectedTextColor = colorScheme.onSurface
                             )
                         )
                     }
@@ -293,6 +308,7 @@ class MainScreen : Screen {
                             val targetScreen: Screen = when(route) {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.MyStudents.path -> MyStudentsScreen()
+                                Route.Teachers.path -> MyTeachersScreen()
                                 Route.Assignments.path -> AssignmentsScreen()
                                 Route.Notifications.path -> NotificationCenterScreen()
                                 Route.Exams.path -> TeacherExamsScreen()
@@ -317,6 +333,7 @@ class MainScreen : Screen {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.Student360.path -> Student360Screen()
                                 Route.MyStudents.path -> MyStudentsScreen()
+                                Route.Teachers.path -> MyTeachersScreen()
                                 Route.Assignments.path -> AssignmentsScreen()
                                 Route.Notifications.path -> NotificationCenterScreen()
                                 Route.Attendance.path -> AttendanceHubScreen()

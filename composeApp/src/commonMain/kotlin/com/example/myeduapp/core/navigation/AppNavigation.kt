@@ -19,12 +19,13 @@ object AppNavigation {
         
         when (role) {
             UserRole.SUPER_ADMIN -> {
-                items.add(NavItem("Branches", Icons.Default.Business, Route.Dashboard))
-                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
+                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
                 items.add(NavItem("Reports", Icons.Default.Assessment, Route.Dashboard))
             }
             UserRole.BRANCH_ADMIN -> {
-                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
+                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
                 items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
             }
             UserRole.TEACHER -> {
@@ -81,7 +82,8 @@ object AppNavigation {
                 items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
             }
             UserRole.BRANCH_ADMIN, UserRole.SUPER_ADMIN -> {
-                items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))
+                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
+                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
                 items.add(NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance))
                 items.add(NavItem("Assignments", Icons.Default.Assignment, Route.Assignments))
                 items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))

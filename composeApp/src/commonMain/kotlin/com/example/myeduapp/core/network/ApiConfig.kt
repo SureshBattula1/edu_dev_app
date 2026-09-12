@@ -3,10 +3,11 @@ package com.example.myeduapp.core.network
 object ApiConfig {
     // For Android Emulator use 10.0.2.2
     // For iOS and physical devices, use your computer's LAN IP
-    private const val BASE_URL_EMULATOR = "http://10.0.2.2:8000/api/"
-    private const val BASE_URL_LOCAL = "http://localhost:8000/api/"
+    // private const val BASE_URL_EMULATOR = "http://10.0.2.2:8000/api/"
+    // private const val BASE_URL_LOCAL = "http://localhost:8000/api/"
+    private const val BASE_URL_PROD = "http://54.226.146.86/api/"
     
-    val BASE_URL: String = BASE_URL_EMULATOR // Default to emulator for now
+    val BASE_URL: String = BASE_URL_PROD
 
     /** Origin for static files (storage/uploads), without /api suffix. */
     val SERVER_ORIGIN: String = BASE_URL.removeSuffix("/").removeSuffix("/api")
@@ -28,6 +29,8 @@ object ApiConfig {
     const val ATTENDANCE_NOTIFY_RECEIPTS = "attendance/notify-receipts"
     const val ATTENDANCE_BULK = "attendance/bulk"
     const val STUDENTS = "students"
+    const val TEACHERS = "teachers"
+    const val BRANCHES_ACCESSIBLE = "branches/accessible"
     const val CLASSES = "classes"
     const val CLASS_GRADES = "classes/grades"
     const val CLASS_SECTIONS = "classes/sections"

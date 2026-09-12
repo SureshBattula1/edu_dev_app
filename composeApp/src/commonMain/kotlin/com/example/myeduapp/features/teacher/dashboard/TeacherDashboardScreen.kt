@@ -26,12 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppStatCard
 import com.example.myeduapp.ui.components.AuthorizationWrapper
-import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.core.ui.theme.InfoColor
-import com.example.myeduapp.core.ui.theme.SuccessColor
-import com.example.myeduapp.core.ui.theme.WarningColor
-import com.example.myeduapp.core.ui.theme.ErrorColor
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.data.model.UserRole
@@ -48,10 +42,11 @@ fun TeacherDashboardScreen(
 ) {
     val academicYearFilter = rememberAcademicYearFilter()
     val academicYearLabel = academicYearFilter.selectedYear?.name?.uppercase() ?: "ACADEMIC YEAR"
+    val colorScheme = MaterialTheme.colorScheme
 
     AuthorizationWrapper(requiredRoles = listOf(UserRole.TEACHER)) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = colorScheme.background
         ) { _ ->
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -71,22 +66,22 @@ fun TeacherDashboardScreen(
                         
                         // Summary Cards
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            AppStatCard("Total Classes", "6", PrimaryBlue, Modifier.weight(1f))
-                            AppStatCard("Total Students", "150", InfoColor, Modifier.weight(1f))
+                            AppStatCard("Total Classes", "6", colorScheme.primary, Modifier.weight(1f))
+                            AppStatCard("Total Students", "150", colorScheme.secondary, Modifier.weight(1f))
                         }
                         
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            AppStatCard("Today's Classes", "4", SuccessColor, Modifier.weight(1f))
-                            AppStatCard("Attendance", "92%", WarningColor, Modifier.weight(1f))
+                            AppStatCard("Today's Classes", "4", colorScheme.tertiary, Modifier.weight(1f))
+                            AppStatCard("Attendance", "92%", colorScheme.error, Modifier.weight(1f))
                         }
 
                         // Quick Actions
-                        Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium)
+                        Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            QuickActionItem("Attendance", Icons.Default.CheckCircle, SuccessColor) { onNavigate(Route.Attendance.path) }
-                            QuickActionItem("Students", Icons.Default.Groups, InfoColor) { onNavigate("my_students") }
-                            QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, WarningColor) { onNavigate("assignments") }
-                            QuickActionItem("Exams", Icons.Default.Quiz, ErrorColor) { onNavigate(Route.Exams.path) }
+                            QuickActionItem("Attendance", Icons.Default.CheckCircle, colorScheme.primary) { onNavigate(Route.Attendance.path) }
+                            QuickActionItem("Students", Icons.Default.Groups, colorScheme.secondary) { onNavigate("my_students") }
+                            QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, colorScheme.tertiary) { onNavigate("assignments") }
+                            QuickActionItem("Exams", Icons.Default.Quiz, colorScheme.error) { onNavigate(Route.Exams.path) }
                         }
 
                         AppCard(
@@ -100,24 +95,24 @@ fun TeacherDashboardScreen(
                                 Surface(
                                     modifier = Modifier.size(44.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    color = InfoColor.copy(alpha = 0.12f)
+                                    color = colorScheme.primaryContainer.copy(alpha = 0.12f)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         BadgedBox(badge = {
                                             if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
                                         }) {
-                                            Icon(Icons.Default.Notifications, contentDescription = null, tint = InfoColor)
+                                            Icon(Icons.Default.Notifications, contentDescription = null, tint = colorScheme.primary)
                                         }
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(14.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Notification Center", style = MaterialTheme.typography.titleLarge, fontSize = 16.sp)
+                                    Text("Notification Center", style = MaterialTheme.typography.titleLarge, fontSize = 16.sp, color = colorScheme.onSurface)
                                     Text(
                                         if (unreadCount > 0) "$unreadCount unread · open the full center"
                                         else "Search, filters, and all alerts",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = SecondaryText
+                                        color = colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -131,11 +126,11 @@ fun TeacherDashboardScreen(
                         }
 
                         // Upcoming
-                        Text("UPCOMING", style = MaterialTheme.typography.headlineMedium)
+                        Text("UPCOMING", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
                         AppCard(modifier = Modifier.fillMaxWidth()) {
                             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                UpcomingItem("Mid-Term Exam", "Starts in 2 days", Icons.Default.Event, InfoColor)
-                                UpcomingItem("Math Assignment", "15 submissions pending", Icons.Default.Description, WarningColor)
+                                UpcomingItem("Mid-Term Exam", "Starts in 2 days", Icons.Default.Event, colorScheme.primary)
+                                UpcomingItem("Math Assignment", "15 submissions pending", Icons.Default.Description, colorScheme.tertiary)
                             }
                         }
                     }
@@ -153,6 +148,7 @@ fun TeacherHeroHeader(
     onNotificationClick: () -> Unit,
     unreadCount: Int = 0
 ) {
+    val colorScheme = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,7 +156,7 @@ fun TeacherHeroHeader(
             .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF007CC4), Color(0xFF299EF2))
+                    colors = listOf(colorScheme.primary, colorScheme.secondary)
                 )
             )
             .padding(horizontal = 24.dp)
@@ -173,13 +169,13 @@ fun TeacherHeroHeader(
             ) {
                 IconButton(
                     onClick = onMenuClick,
-                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = colorScheme.onPrimary)
                 }
                 
                 Surface(
-                    color = Color.White.copy(alpha = 0.2f),
+                    color = colorScheme.onPrimary.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(50),
                     modifier = Modifier.height(32.dp)
                 ) {
@@ -187,19 +183,19 @@ fun TeacherHeroHeader(
                         academicYearLabel,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
+                        color = colorScheme.onPrimary,
                         fontSize = 10.sp
                     )
                 }
 
                 IconButton(
                     onClick = onNotificationClick,
-                    modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape)
+                    modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
                 ) {
                     BadgedBox(badge = {
                         if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
                     }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = colorScheme.onPrimary)
                     }
                 }
             }
@@ -208,10 +204,10 @@ fun TeacherHeroHeader(
             
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(60.dp).background(Color.White.copy(alpha = 0.2f), CircleShape).padding(2.dp)
+                    modifier = Modifier.size(60.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape).padding(2.dp)
                 ) {
-                    Box(modifier = Modifier.fillMaxSize().background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                    Box(modifier = Modifier.fillMaxSize().background(colorScheme.surface, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(32.dp))
                     }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -219,13 +215,13 @@ fun TeacherHeroHeader(
                     Text(
                         "WELCOME BACK,",
                         style = MaterialTheme.typography.labelLarge,
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = colorScheme.onPrimary.copy(alpha = 0.7f),
                         fontSize = 11.sp
                     )
                     Text(
                         user.name.uppercase(),
                         style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White,
+                        color = colorScheme.onPrimary,
                         fontSize = 22.sp
                     )
                 }
@@ -251,7 +247,7 @@ fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () 
         Text(
             label, 
             style = MaterialTheme.typography.bodySmall, 
-            color = SecondaryText, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant, 
             modifier = Modifier.padding(top = 8.dp),
             fontWeight = FontWeight.Medium
         )
@@ -260,31 +256,33 @@ fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () 
 
 @Composable
 fun DashboardSectionHeader(title: String, actionText: String, onActionClick: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, style = MaterialTheme.typography.headlineMedium)
+        Text(title, style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
         TextButton(onClick = onActionClick) {
-            Text(actionText, color = PrimaryBlue, style = MaterialTheme.typography.titleMedium)
+            Text(actionText, color = colorScheme.primary, style = MaterialTheme.typography.titleMedium)
         }
     }
 }
 
 @Composable
 fun TimetableMiniCard(time: String, subject: String, className: String, room: String) {
+    val colorScheme = MaterialTheme.colorScheme
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(time, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                Text(time, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = colorScheme.primary)
             }
             Spacer(modifier = Modifier.width(20.dp))
-            Box(modifier = Modifier.width(1.dp).height(32.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)))
+            Box(modifier = Modifier.width(1.dp).height(32.dp).background(colorScheme.outline.copy(alpha = 0.5f)))
             Spacer(modifier = Modifier.width(20.dp))
             Column {
-                Text(subject, style = MaterialTheme.typography.titleLarge)
-                Text("$className • $room", style = MaterialTheme.typography.bodyMedium, color = SecondaryText)
+                Text(subject, style = MaterialTheme.typography.titleLarge, color = colorScheme.onSurface)
+                Text("$className • $room", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -292,6 +290,7 @@ fun TimetableMiniCard(time: String, subject: String, className: String, room: St
 
 @Composable
 fun UpcomingItem(title: String, subtitle: String, icon: ImageVector, color: Color) {
+    val colorScheme = MaterialTheme.colorScheme
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             modifier = Modifier.size(40.dp),
@@ -304,8 +303,8 @@ fun UpcomingItem(title: String, subtitle: String, icon: ImageVector, color: Colo
         }
         Spacer(modifier = Modifier.width(16.dp))
         Column {
-            Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 14.sp)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = SecondaryText)
+            Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 14.sp, color = colorScheme.onSurface)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
         }
     }
 }

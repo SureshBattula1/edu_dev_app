@@ -33,6 +33,8 @@ import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.FilterOption
 import com.example.myeduapp.data.model.GradeOption
 import com.example.myeduapp.data.model.Student
+import com.example.myeduapp.data.model.UserRole
+import com.example.myeduapp.data.repository.BranchRepository
 import com.example.myeduapp.data.repository.ClassRepository
 import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.features.teacher.student360.Student360Screen
@@ -44,30 +46,46 @@ class MyStudentsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val repository = remember { StudentRepository() }
         val classRepository = remember { ClassRepository() }
+        val branchRepository = remember { BranchRepository() }
         val academicYearFilter = rememberAcademicYearFilter()
+        val role = SessionManager.user?.userRole
+        val showBranchFilter = role == UserRole.SUPER_ADMIN
 
         var students by remember { mutableStateOf<List<Student>>(emptyList()) }
+        var branchOptions by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
         var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
         var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
 
         var searchQuery by remember { mutableStateOf("") }
+        var selectedBranchId by remember { mutableStateOf<String?>(null) }
         var selectedGrade by remember { mutableStateOf<String?>(null) }
         var selectedSection by remember { mutableStateOf<String?>(null) }
 
         val gradeOptions = remember(grades) {
             grades.map { FilterOption(value = it.value, label = it.label) }
         }
+        val selectedBranchInt = selectedBranchId?.toIntOrNull()
 
-        LaunchedEffect(academicYearFilter.selectedYearId) {
+        LaunchedEffect(showBranchFilter) {
+            if (showBranchFilter) {
+                branchRepository.getBranchFilterOptions().onSuccess { branchOptions = it }
+            }
+        }
+
+        LaunchedEffect(academicYearFilter.selectedYearId, selectedBranchId, showBranchFilter) {
             if (!academicYearFilter.isReady) return@LaunchedEffect
-            classRepository.getGrades().onSuccess { grades = it }
+            classRepository.getGrades(branchId = if (showBranchFilter) selectedBranchInt else null)
+                .onSuccess { grades = it }
             selectedGrade = null
             selectedSection = null
         }
 
-        LaunchedEffect(selectedGrade) {
-            classRepository.getSections(selectedGrade).onSuccess { sections = it }
+        LaunchedEffect(selectedGrade, selectedBranchId, showBranchFilter) {
+            classRepository.getSections(
+                grade = selectedGrade,
+                branchId = if (showBranchFilter) selectedBranchInt else null
+            ).onSuccess { sections = it }
             if (selectedGrade == null) selectedSection = null
         }
 
@@ -75,6 +93,7 @@ class MyStudentsScreen : Screen {
             academicYearFilter.isReady,
             academicYearFilter.selectedYearId,
             searchQuery,
+            selectedBranchId,
             selectedGrade,
             selectedSection
         ) {
@@ -91,19 +110,21 @@ class MyStudentsScreen : Screen {
                     query = searchQuery.ifBlank { null },
                     grade = selectedGrade,
                     section = selectedSection,
-                    academicYearId = yearId
+                    academicYearId = yearId,
+                    branchId = if (showBranchFilter) selectedBranchInt else null
                 ).onSuccess { students = it }
                 isLoading = false
             }
         }
 
         val hasActiveFilters = academicYearFilter.selectedYearId != null ||
+            selectedBranchId != null ||
             selectedGrade != null ||
             selectedSection != null
 
         Scaffold(
             topBar = {
-                AppBackTopBar(title = "My Students", onBack = { navigator.pop() })
+                AppBackTopBar(title = "Students", onBack = { navigator.pop() })
             }
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -156,6 +177,26 @@ class MyStudentsScreen : Screen {
                     )
                 }
 
+                if (showBranchFilter) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilterOptionDropdown(
+                            label = "Branch",
+                            options = branchOptions,
+                            selectedValue = selectedBranchId,
+                            onOptionSelected = {
+                                selectedBranchId = it
+                                selectedGrade = null
+                                selectedSection = null
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -186,6 +227,7 @@ class MyStudentsScreen : Screen {
                                 val current = academicYearFilter.academicYears.find { it.is_current }
                                     ?: academicYearFilter.academicYears.firstOrNull()
                                 current?.let { academicYearFilter.onYearSelected(it.id) }
+                                selectedBranchId = null
                                 selectedGrade = null
                                 selectedSection = null
                             }
@@ -247,7 +289,7 @@ fun StudentCard(student: Student, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(student.full_name, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(
-                    text = "${student.grade ?: "N/A"} - ${student.section ?: "N/A"}",
+                    text = "${student.displayGradeLabel ?: student.displayGrade ?: "N/A"} - ${student.displaySection ?: "N/A"}",
                     fontSize = 13.sp,
                     color = SecondaryText
                 )

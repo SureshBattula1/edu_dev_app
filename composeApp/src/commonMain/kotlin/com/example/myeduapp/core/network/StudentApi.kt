@@ -61,6 +61,7 @@ class StudentApi {
         grade: String? = null,
         section: String? = null,
         academicYearId: String? = null,
+        branchId: Int? = null,
         page: Int = 1,
         perPage: Int = 100
     ): StudentResponse {
@@ -71,6 +72,7 @@ class StudentApi {
             parameter("page", page)
             parameter("per_page", perPage)
             academicYearId?.let { parameter("academic_year_id", it) }
+            branchId?.let { parameter("branch_id", it) }
             header(HttpHeaders.Authorization, "Bearer $token")
         }.body()
     }
