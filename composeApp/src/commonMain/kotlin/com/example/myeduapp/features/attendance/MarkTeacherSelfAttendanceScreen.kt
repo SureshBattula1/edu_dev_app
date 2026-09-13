@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -18,23 +19,25 @@ import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.Background
 import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.util.DateUtils
-import com.example.myeduapp.data.repository.AttendanceRepository
-import kotlinx.coroutines.launch
 
 class MarkTeacherSelfAttendanceScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val repository = remember { AttendanceRepository() }
-        val scope = rememberCoroutineScope()
+        val viewModel = rememberScreenModel { MarkTeacherSelfAttendanceViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
         val snackbar = remember { SnackbarHostState() }
 
-        var selectedDate by remember { mutableStateOf(DateUtils.today()) }
-        var selectedStatus by remember { mutableStateOf("Present") }
-        var isSubmitting by remember { mutableStateOf(false) }
-
-        val statuses = listOf("Present", "Absent", "Late", "Half-Day", "Sick Leave", "Leave")
+        LaunchedEffect(uiState.snackbarMessage, uiState.navigateBack) {
+            uiState.snackbarMessage?.let { message ->
+                snackbar.showSnackbar(message)
+                viewModel.consumeSnackbar()
+            }
+            if (uiState.navigateBack) {
+                viewModel.consumeNavigateBack()
+                navigator.pop()
+            }
+        }
 
         Scaffold(
             containerColor = Background,
@@ -59,8 +62,8 @@ class MarkTeacherSelfAttendanceScreen : Screen {
                         verticalArrangement = Arrangement.spacedBy(AttendanceDimens.ItemSpacing)
                     ) {
                         AttendanceDatePicker(
-                            selectedDate = selectedDate,
-                            onDateChange = { selectedDate = it },
+                            selectedDate = uiState.selectedDate,
+                            onDateChange = viewModel::onDateChange,
                             label = "Attendance Date"
                         )
                         Text(
@@ -70,29 +73,17 @@ class MarkTeacherSelfAttendanceScreen : Screen {
                             color = PrimaryBlue
                         )
                         AttendanceStatusGrid(
-                            statuses = statuses,
-                            selected = selectedStatus,
-                            onSelected = { selectedStatus = it }
+                            statuses = viewModel.statuses,
+                            selected = uiState.selectedStatus,
+                            onSelected = viewModel::onStatusChange
                         )
                     }
                 }
                 AppButton(
-                    text = if (isSubmitting) "Saving..." else "Submit Attendance",
-                    onClick = {
-                        if (isSubmitting) return@AppButton
-                        isSubmitting = true
-                        scope.launch {
-                            repository.submitTeacherSelfAttendance(selectedDate, selectedStatus)
-                                .onSuccess {
-                                    snackbar.showSnackbar(it)
-                                    navigator.pop()
-                                }
-                                .onFailure { snackbar.showSnackbar(it.message ?: "Failed to submit") }
-                            isSubmitting = false
-                        }
-                    },
+                    text = if (uiState.isSubmitting) "Saving..." else "Submit Attendance",
+                    onClick = viewModel::submit,
                     modifier = Modifier.fillMaxWidth(),
-                    isLoading = isSubmitting
+                    isLoading = uiState.isSubmitting
                 )
             }
         }

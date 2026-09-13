@@ -18,15 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.FeeDue
 import com.example.myeduapp.data.model.FeePayment
 import com.example.myeduapp.data.model.FeeSummary
-import com.example.myeduapp.data.repository.FeeRepository
-import com.example.myeduapp.core.datastore.SessionManager
-import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
@@ -45,28 +43,11 @@ class TeacherFeesScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
-    val authState by SessionManager.authState.collectAsState()
-    val user = (authState as? AuthState.Authenticated)?.user ?: return
-    
-    val repository = remember { FeeRepository() }
-    var dues by remember { mutableStateOf<List<FeeDue>>(emptyList()) }
-    var payments by remember { mutableStateOf<List<FeePayment>>(emptyList()) }
-    var feeSummary by remember { mutableStateOf(FeeSummary()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var selectedTab by remember { mutableStateOf(0) }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel { TeacherFeesViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     
     val tabs = listOf("Dues", "History")
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        repository.getStudentFees(user.id).onSuccess { fees ->
-            dues = fees.dues
-            payments = fees.payments
-            feeSummary = fees.summary
-        }
-        
-        isLoading = false
-    }
 
     Scaffold(
         topBar = {
@@ -88,28 +69,28 @@ fun TeacherFeesScreenContent(onBack: (() -> Unit)? = null) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            FeeSummaryHeader(feeSummary)
+            FeeSummaryHeader(uiState.feeSummary)
             
             TabRow(
-                selectedTabIndex = selectedTab,
+                selectedTabIndex = uiState.selectedTab,
                 containerColor = Color.White,
                 contentColor = PrimaryBlue
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = uiState.selectedTab == index,
+                        onClick = { viewModel.onTabSelected(index) },
                         text = { Text(title) }
                     )
                 }
             }
             
-            if (isLoading) {
+            if (uiState.isLoading) {
                 AppLoaderFullscreen(message = "Loading fees")
             } else {
-                when (selectedTab) {
-                    0 -> DuesList(dues)
-                    1 -> PaymentsList(payments)
+                when (uiState.selectedTab) {
+                    0 -> DuesList(uiState.dues)
+                    1 -> PaymentsList(uiState.payments)
                 }
             }
         }

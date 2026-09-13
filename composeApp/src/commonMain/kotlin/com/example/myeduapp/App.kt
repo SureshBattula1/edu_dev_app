@@ -18,7 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -26,28 +26,24 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
+import com.example.myeduapp.features.auth.AppViewModel
 import com.example.myeduapp.features.auth.login.LoginScreen
 import com.example.myeduapp.features.auth.splash.SplashContent
+import com.example.myeduapp.features.main.MainViewModel
 import com.example.myeduapp.features.teacher.dashboard.TeacherDashboardScreen
 import com.example.myeduapp.features.teacher.students.MyStudentsScreen
 import com.example.myeduapp.features.teacher.teachers.MyTeachersScreen
 import com.example.myeduapp.features.teacher.assignments.AssignmentsScreen
 import com.example.myeduapp.features.notifications.IncomingNotificationBanner
 import com.example.myeduapp.features.notifications.NotificationCenterScreen
-import com.example.myeduapp.data.model.Notification
-import com.example.myeduapp.data.repository.CommunicationRepository
-import com.example.myeduapp.core.sound.showAppNotification
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.myeduapp.features.teacher.exams.*
 import com.example.myeduapp.features.teacher.marks.MarksScreen
 import com.example.myeduapp.features.teacher.notices.*
 import com.example.myeduapp.features.teacher.communication.TeacherCommunicationScreen
 import com.example.myeduapp.features.teacher.dashboard.DashboardScreen
-import com.example.myeduapp.features.teacher.attendance.*
 import com.example.myeduapp.features.attendance.AttendanceHubScreen
 import com.example.myeduapp.features.teacher.fees.*
-import com.example.myeduapp.features.teacher.leaves.TeacherLeaveScreen
 import com.example.myeduapp.features.leaves.LeaveHubScreen
 import com.example.myeduapp.features.teacher.timetable.*
 import com.example.myeduapp.features.teacher.profile.*
@@ -57,21 +53,22 @@ import com.example.myeduapp.ui.screens.PlaceholderScreen
 import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.NetworkAvatar
-import com.example.myeduapp.data.repository.AuthRepository
-import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.data.model.UserRole
-import kotlinx.coroutines.launch
 
 @Composable
 fun App() {
     MyEduAppTheme {
         val authState by SessionManager.authState.collectAsState()
-        val authRepository = remember { AuthRepository() }
+        val appViewModel = remember { AppViewModel() }
         var splashDone by remember { mutableStateOf(false) }
 
+        DisposableEffect(appViewModel) {
+            onDispose { appViewModel.clear() }
+        }
+
         LaunchedEffect(Unit) {
-            authRepository.checkAuth()
+            appViewModel.checkAuth()
         }
 
         Surface(
@@ -109,20 +106,12 @@ fun App() {
 }
 
 @Composable
-private fun DrawerProfileAvatar(user: User, role: UserRole) {
-    var avatarUrl by remember(user.id) { mutableStateOf(user.avatar?.takeIf { it.isNotBlank() }) }
+private fun DrawerProfileAvatar(user: User, avatarUrl: String?) {
     val colorScheme = MaterialTheme.colorScheme
-
-    LaunchedEffect(user.id, user.avatar, role) {
-        avatarUrl = user.avatar?.takeIf { it.isNotBlank() }
-        if (avatarUrl == null && role == UserRole.STUDENT) {
-            StudentRepository().resolveStudentForUser(user)
-                .onSuccess { avatarUrl = it.avatar?.takeIf { a -> a.isNotBlank() } }
-        }
-    }
+    val resolvedUrl = avatarUrl ?: user.avatar?.takeIf { it.isNotBlank() }
 
     NetworkAvatar(
-        url = avatarUrl,
+        url = resolvedUrl,
         modifier = Modifier
             .size(64.dp)
             .clip(CircleShape)
@@ -151,60 +140,33 @@ class MainScreen : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val authState by SessionManager.authState.collectAsState()
-        val authRepository = remember { AuthRepository() }
+        val viewModel = rememberScreenModel { MainViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
         val scope = rememberCoroutineScope()
         val colorScheme = MaterialTheme.colorScheme
-        
+
         val user = (authState as? AuthState.Authenticated)?.user ?: return
         val role = user.userRole
-        
+
         val drawerItems = AppNavigation.getDrawerItems(role)
 
-        var showLogoutDialog by remember { mutableStateOf(false) }
-        var unreadCount by remember { mutableStateOf(0) }
-        var incomingAlert by remember { mutableStateOf<Notification?>(null) }
-        var knownUnreadIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-        val communicationRepository = remember { CommunicationRepository() }
-
         LaunchedEffect(user.id) {
-            var primed = false
-            while (true) {
-                communicationRepository.getNotifications(unreadOnly = true, limit = 20).onSuccess { unread ->
-                    val ids = unread.map { it.id }.toSet()
-                    unreadCount = unread.size
-                    if (primed) {
-                        val newest = unread.firstOrNull { it.id !in knownUnreadIds }
-                        if (newest != null) {
-                            showAppNotification(newest.title, newest.message)
-                            incomingAlert = newest
-                        }
-                    }
-                    knownUnreadIds = ids
-                    primed = true
-                }
-                delay(8_000)
-            }
+            viewModel.startUnreadPolling(user.id.toString())
+            viewModel.resolveDrawerAvatar(user, role)
         }
 
-        if (showLogoutDialog) {
+        if (uiState.showLogoutDialog) {
             AlertDialog(
-                onDismissRequest = { showLogoutDialog = false },
+                onDismissRequest = { viewModel.showLogoutDialog(false) },
                 title = { Text("Logout") },
                 text = { Text("Are you sure you want to log out from MyEduApp?") },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showLogoutDialog = false
-                            scope.launch {
-                                authRepository.logout()
-                            }
-                        }
-                    ) {
+                    TextButton(onClick = { viewModel.logout() }) {
                         Text("Logout", color = colorScheme.error)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showLogoutDialog = false }) {
+                    TextButton(onClick = { viewModel.showLogoutDialog(false) }) {
                         Text("Cancel")
                     }
                 }
@@ -239,13 +201,13 @@ class MainScreen : Screen {
                                 }
                                 .padding(24.dp)
                         ) {
-                            DrawerProfileAvatar(user = user, role = role)
+                            DrawerProfileAvatar(user = user, avatarUrl = uiState.drawerAvatarUrl)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(user.name, style = MaterialTheme.typography.titleLarge, color = colorScheme.onSurface)
                             Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
                         }
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = colorScheme.outline.copy(alpha = 0.5f))
-                        
+
                         drawerItems.forEach { item ->
                             NavigationDrawerItem(
                                 icon = { Icon(item.icon, contentDescription = null) },
@@ -279,16 +241,16 @@ class MainScreen : Screen {
                                 )
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.weight(1f))
-                        
+
                         NavigationDrawerItem(
                             icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
                             label = { Text("Logout", style = MaterialTheme.typography.bodyMedium) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
-                                showLogoutDialog = true
+                                viewModel.showLogoutDialog(true)
                             },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
                             colors = NavigationDrawerItemDefaults.colors(
@@ -305,7 +267,7 @@ class MainScreen : Screen {
                     TeacherDashboardScreen(
                         user = user,
                         onNavigate = { route ->
-                            val targetScreen: Screen = when(route) {
+                            val targetScreen: Screen = when (route) {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.MyStudents.path -> MyStudentsScreen()
                                 Route.Teachers.path -> MyTeachersScreen()
@@ -324,12 +286,12 @@ class MainScreen : Screen {
                         },
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onNotificationClick = { navigator.push(NotificationCenterScreen()) },
-                        unreadCount = unreadCount
+                        unreadCount = uiState.unreadCount
                     )
                 } else {
                     DashboardScreen(
                         onNavigate = { route ->
-                            val targetScreen: Screen = when(route) {
+                            val targetScreen: Screen = when (route) {
                                 Route.Profile.path -> ProfileScreen()
                                 Route.Student360.path -> Student360Screen()
                                 Route.MyStudents.path -> MyStudentsScreen()
@@ -348,21 +310,21 @@ class MainScreen : Screen {
                         },
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onNotificationClick = { navigator.push(NotificationCenterScreen()) },
-                        unreadCount = unreadCount
+                        unreadCount = uiState.unreadCount
                     )
                 }
 
-                incomingAlert?.let { alert ->
+                uiState.incomingAlert?.let { alert ->
                     Box(
                         modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).statusBarsPadding()
                     ) {
                         IncomingNotificationBanner(
                             notification = alert,
                             onOpen = {
-                                incomingAlert = null
+                                viewModel.dismissIncomingAlert()
                                 navigator.push(NotificationCenterScreen())
                             },
-                            onDismiss = { incomingAlert = null }
+                            onDismiss = { viewModel.dismissIncomingAlert() }
                         )
                     }
                 }

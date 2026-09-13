@@ -16,13 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.TimetableSlot
-import com.example.myeduapp.data.repository.TimetableRepository
-import com.example.myeduapp.core.datastore.SessionManager
-import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
@@ -38,26 +36,11 @@ class TeacherTimetableScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherTimetableScreenContent(onBack: (() -> Unit)? = null) {
-    val authState by SessionManager.authState.collectAsState()
-    val user = (authState as? AuthState.Authenticated)?.user ?: return
-    
-    val repository = remember { TimetableRepository() }
-    var slots by remember { mutableStateOf<List<TimetableSlot>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var selectedDay by remember { mutableStateOf("Monday") }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel { TeacherTimetableViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     
     val days = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-
-    LaunchedEffect(Unit) {
-        // Use user's actual grade/section if available, otherwise default to 1/A for demo
-        val grade = user.branch_id?.toString() ?: "1" // Just a placeholder logic
-        repository.getTimetable(grade, "A").onSuccess {
-            slots = it
-            isLoading = false
-        }.onFailure {
-            isLoading = false
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -80,28 +63,28 @@ fun TeacherTimetableScreenContent(onBack: (() -> Unit)? = null) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ScrollableTabRow(
-                selectedTabIndex = days.indexOf(selectedDay),
+                selectedTabIndex = days.indexOf(uiState.selectedDay),
                 containerColor = Color.White,
                 contentColor = PrimaryBlue,
                 edgePadding = 16.dp
             ) {
                 days.forEach { day ->
                     Tab(
-                        selected = selectedDay == day,
-                        onClick = { selectedDay = day },
+                        selected = uiState.selectedDay == day,
+                        onClick = { viewModel.onDaySelected(day) },
                         text = { Text(day) }
                     )
                 }
             }
             
-            if (isLoading) {
+            if (uiState.isLoading) {
                 AppLoaderFullscreen(message = "Loading timetable")
             } else {
-                val daySlots = slots.filter { it.day.equals(selectedDay, ignoreCase = true) }
+                val daySlots = uiState.slots.filter { it.day.equals(uiState.selectedDay, ignoreCase = true) }
                 
                 if (daySlots.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No classes scheduled for $selectedDay")
+                        Text("No classes scheduled for ${uiState.selectedDay}")
                     }
                 } else {
                     LazyColumn(

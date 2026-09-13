@@ -8,10 +8,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -20,8 +20,6 @@ import com.example.myeduapp.core.ui.theme.LeaveDimens
 import com.example.myeduapp.core.ui.theme.leaveStatusColor
 import com.example.myeduapp.data.model.LeaveCategory
 import com.example.myeduapp.data.model.LeaveRecord
-import com.example.myeduapp.data.repository.LeaveRepository
-import kotlinx.coroutines.launch
 
 class LeaveApprovalsScreen(private val category: LeaveCategory) : Screen {
     @Composable
@@ -38,35 +36,21 @@ fun LeaveApprovalsScreenContent(
     onBack: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val repository = remember { LeaveRepository() }
-    val scope = rememberCoroutineScope()
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = category.name) { LeaveApprovalsViewModel(category) }
+    val uiState by viewModel.uiState.collectAsState()
 
-    var leaves by remember { mutableStateOf<List<LeaveRecord>>(emptyList()) }
-    var statusFilter by remember { mutableStateOf<String?>("Pending") }
-    var isLoading by remember { mutableStateOf(true) }
-    var processingId by remember { mutableStateOf<Int?>(null) }
-    var snackbarMessage by remember { mutableStateOf<String?>(null) }
     var remarksDialogLeave by remember { mutableStateOf<LeaveRecord?>(null) }
     var remarksDialogAction by remember { mutableStateOf<String?>(null) }
     var remarksText by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    fun loadLeaves() {
-        scope.launch {
-            isLoading = true
-            repository.getLeavesForApproval(category, statusFilter)
-                .onSuccess { leaves = it.data }
-                .onFailure { snackbarMessage = it.message }
-            isLoading = false
-        }
-    }
+    LaunchedEffect(category, uiState.statusFilter) { viewModel.loadLeaves() }
 
-    LaunchedEffect(category, statusFilter) { loadLeaves() }
-
-    LaunchedEffect(snackbarMessage) {
-        snackbarMessage?.let {
+    LaunchedEffect(uiState.snackbarMessage) {
+        uiState.snackbarMessage?.let {
             snackbarHostState.showSnackbar(it)
-            snackbarMessage = null
+            viewModel.clearSnackbar()
         }
     }
 
@@ -107,24 +91,24 @@ fun LeaveApprovalsScreenContent(
             ) {
                 LeaveStatusFilterRow(
                     options = listOf("Pending", "Approved", "Rejected", "All"),
-                    selected = statusFilter,
-                    onSelect = { statusFilter = it }
+                    selected = uiState.statusFilter,
+                    onSelect = { viewModel.setStatusFilter(it) }
                 )
             }
 
             when {
-                isLoading -> AppLoaderFullscreen(message = "Loading leave requests")
-                leaves.isEmpty() -> LeaveEmptyState(
+                uiState.isLoading -> AppLoaderFullscreen(message = "Loading leave requests")
+                uiState.leaves.isEmpty() -> LeaveEmptyState(
                     title = "No requests found",
-                    message = "There are no ${statusFilter?.lowercase() ?: ""} leave requests right now.",
+                    message = "There are no ${uiState.statusFilter?.lowercase() ?: ""} leave requests right now.",
                     modifier = Modifier.fillMaxSize()
                 )
                 else -> LazyColumn(
                     contentPadding = PaddingValues(LeaveDimens.ScreenPadding),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(leaves, key = { it.id }) { leave ->
-                        val isProcessing = processingId == leave.id
+                    items(uiState.leaves, key = { it.id }) { leave ->
+                        val isProcessing = uiState.processingId == leave.id
                         LeaveRecordCard(
                             leave = leave,
                             showApplicant = true,
@@ -184,21 +168,13 @@ fun LeaveApprovalsScreenContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        scope.launch {
-                            processingId = leave.id
-                            val result = if (action == "Approved") {
-                                repository.approveLeave(leave.id, category, remarksText.takeIf { it.isNotBlank() })
-                            } else {
-                                repository.rejectLeave(leave.id, category, remarksText.takeIf { it.isNotBlank() })
-                            }
-                            processingId = null
-                            remarksDialogLeave = null
-                            remarksDialogAction = null
-                            result.onSuccess {
-                                snackbarMessage = it
-                                loadLeaves()
-                            }.onFailure { snackbarMessage = it.message }
-                        }
+                        remarksDialogLeave = null
+                        remarksDialogAction = null
+                        viewModel.processLeave(
+                            leaveId = leave.id,
+                            approve = action == "Approved",
+                            remarks = remarksText.takeIf { it.isNotBlank() }
+                        )
                     }
                 ) { Text("Confirm") }
             },

@@ -44,12 +44,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -76,35 +75,10 @@ import com.example.myeduapp.core.ui.theme.SecondaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.SuccessColor
 import com.example.myeduapp.core.ui.theme.WarningColor
-import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Notification
 import com.example.myeduapp.data.model.UserRole
-import com.example.myeduapp.data.repository.CommunicationRepository
-import kotlinx.coroutines.launch
 
 internal var pendingOpenSentNotifications = false
-
-private enum class CenterTab { Inbox, Sent }
-
-private enum class CenterFilter(val label: String) {
-    All("All"),
-    Unread("Unread"),
-    Assignment("Assignment"),
-    Attendance("Attendance"),
-    Info("Info"),
-    Warning("Warning"),
-    Alert("Alert");
-
-    fun toParams(): Triple<String, String?, String?> = when (this) {
-        All -> Triple("all", null, null)
-        Unread -> Triple("unread", null, null)
-        Assignment -> Triple("all", null, "assignment")
-        Attendance -> Triple("all", null, "attendance")
-        Info -> Triple("all", "Info", null)
-        Warning -> Triple("all", "Warning", null)
-        Alert -> Triple("all", "Alert", null)
-    }
-}
 
 class NotificationCenterScreen : Screen {
     @Composable
@@ -118,121 +92,39 @@ class NotificationCenterScreen : Screen {
 @Composable
 fun NotificationCenterContent(onBack: () -> Unit) {
     val navigator = LocalNavigator.currentOrThrow
-    val repository = remember { CommunicationRepository() }
-    val scope = rememberCoroutineScope()
+    val screen = navigator.lastItem
+    val viewModel = screen.rememberScreenModel { NotificationCenterViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val canCompose = SessionManager.user?.userRole in listOf(
         UserRole.TEACHER, UserRole.BRANCH_ADMIN, UserRole.SUPER_ADMIN, UserRole.STAFF
     )
 
-    var tab by remember { mutableStateOf(if (pendingOpenSentNotifications) CenterTab.Sent else CenterTab.Inbox) }
-    var filter by remember { mutableStateOf(CenterFilter.All) }
-    var query by remember { mutableStateOf("") }
-    var today by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var older by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var olderPage by remember { mutableStateOf(1) }
-    var olderHasMore by remember { mutableStateOf(false) }
-    var loading by remember { mutableStateOf(true) }
-    var loadingOlder by remember { mutableStateOf(false) }
-    var opened by remember { mutableStateOf<Notification?>(null) }
-    var sent by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var loadingSent by remember { mutableStateOf(false) }
-    var sentError by remember { mutableStateOf<String?>(null) }
-
     LaunchedEffect(Unit) {
         if (pendingOpenSentNotifications) {
             pendingOpenSentNotifications = false
-            tab = CenterTab.Sent
+            viewModel.setTab(CenterTab.Sent)
         }
     }
 
-    fun params() = filter.toParams()
-
-    suspend fun loadToday() {
-        val (status, type, source) = params()
-        repository.getNotificationsPage(status, type, source, "today", 1, 50)
-            .onSuccess { today = it.items }
+    LaunchedEffect(uiState.filter) {
+        if (uiState.tab == CenterTab.Inbox) viewModel.reload()
+    }
+    LaunchedEffect(uiState.tab) {
+        viewModel.onTabOrFilterChanged()
     }
 
-    suspend fun loadOlder(reset: Boolean) {
-        if (loadingOlder) return
-        loadingOlder = true
-        val next = if (reset) 1 else olderPage + 1
-        val (status, type, source) = params()
-        repository.getNotificationsPage(status, type, source, "older", next, 20)
-            .onSuccess { page ->
-                older = if (reset) page.items else older + page.items.filter { item -> older.none { it.id == item.id } }
-                olderPage = page.page
-                olderHasMore = page.hasMore
-            }
-        loadingOlder = false
-    }
-
-    suspend fun reload() {
-        loading = true
-        today = emptyList()
-        older = emptyList()
-        olderPage = 1
-        olderHasMore = false
-        loadToday()
-        loadOlder(reset = true)
-        loading = false
-    }
-
-    suspend fun loadSent() {
-        loadingSent = true
-        sentError = null
-        repository.getSentNotifications()
-            .onSuccess { sent = it }
-            .onFailure { sentError = it.message ?: "Could not load sent notifications" }
-        loadingSent = false
-    }
-
-    LaunchedEffect(filter) { if (tab == CenterTab.Inbox) reload() }
-    LaunchedEffect(tab) {
-        if (tab == CenterTab.Sent) loadSent()
-        else reload()
-    }
-
-    val shouldLoadMore by remember {
+    val olderHasMore = uiState.olderHasMore
+    val loadingOlder = uiState.loadingOlder
+    val shouldLoadMore by remember(olderHasMore, loadingOlder) {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val total = listState.layoutInfo.totalItemsCount
             olderHasMore && !loadingOlder && total > 0 && last >= total - 3
         }
     }
-    LaunchedEffect(shouldLoadMore, filter) {
-        if (shouldLoadMore) loadOlder(reset = false)
-    }
-
-    val combined = remember(today, older, query) {
-        val all = today + older.filter { item -> today.none { it.id == item.id } }
-        val q = query.trim()
-        if (q.isBlank()) all
-        else all.filter { item ->
-            listOf(item.title, item.message, item.description, item.optional_description, item.source)
-                .any { it.orEmpty().contains(q, ignoreCase = true) }
-        }
-    }
-    val todayKey = DateUtils.today()
-    val yesterdayKey = DateUtils.shiftDate(todayKey, -1)
-    val todayItems = combined.filter { notificationDay(it) == todayKey }
-    val yesterdayItems = combined.filter { notificationDay(it) == yesterdayKey }
-    val earlierItems = combined.filter {
-        val day = notificationDay(it)
-        day != todayKey && day != yesterdayKey
-    }
-    val unreadCount = combined.count { !it.isRead }
-
-    fun openItem(item: Notification) {
-        opened = item
-        if (!item.isRead) {
-            scope.launch {
-                repository.markAsRead(item.id)
-                today = today.map { if (it.id == item.id) it.copy(is_read = true, read_at = "now") else it }
-                older = older.map { if (it.id == item.id) it.copy(is_read = true, read_at = "now") else it }
-            }
-        }
+    LaunchedEffect(shouldLoadMore, uiState.filter) {
+        if (shouldLoadMore) viewModel.loadMoreIfNeeded()
     }
 
     Scaffold(
@@ -247,23 +139,12 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                             Icon(Icons.Default.Edit, contentDescription = "Compose", tint = Color.White)
                         }
                     }
-                    if (tab == CenterTab.Inbox && unreadCount > 0) {
-                        IconButton(onClick = {
-                            scope.launch {
-                                repository.markAllAsRead().onSuccess {
-                                    today = today.map { it.copy(is_read = true, read_at = "now") }
-                                    older = older.map { it.copy(is_read = true, read_at = "now") }
-                                }
-                            }
-                        }) {
+                    if (uiState.tab == CenterTab.Inbox && uiState.unreadCount > 0) {
+                        IconButton(onClick = { viewModel.markAllAsRead() }) {
                             Icon(Icons.Default.DoneAll, contentDescription = "Mark all read", tint = Color.White)
                         }
                     }
-                    IconButton(onClick = {
-                        scope.launch {
-                            if (tab == CenterTab.Sent) loadSent() else reload()
-                        }
-                    }) {
+                    IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color.White)
                     }
                 }
@@ -279,24 +160,24 @@ fun NotificationCenterContent(onBack: () -> Unit) {
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip(
-                        selected = tab == CenterTab.Inbox,
-                        onClick = { tab = CenterTab.Inbox },
+                        selected = uiState.tab == CenterTab.Inbox,
+                        onClick = { viewModel.setTab(CenterTab.Inbox) },
                         label = { Text("Inbox", fontSize = 12.sp) },
                         modifier = Modifier.height(32.dp)
                     )
                     if (canCompose) {
                         FilterChip(
-                            selected = tab == CenterTab.Sent,
-                            onClick = { tab = CenterTab.Sent },
+                            selected = uiState.tab == CenterTab.Sent,
+                            onClick = { viewModel.setTab(CenterTab.Sent) },
                             label = { Text("Sent", fontSize = 12.sp) },
                             modifier = Modifier.height(32.dp)
                         )
                     }
                 }
-                if (tab == CenterTab.Inbox) {
+                if (uiState.tab == CenterTab.Inbox) {
                     OutlinedTextField(
-                        value = query,
-                        onValueChange = { query = it },
+                        value = uiState.query,
+                        onValueChange = { viewModel.setQuery(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Search alerts", fontSize = 13.sp) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = SecondaryText) },
@@ -310,9 +191,9 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                         )
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        StatPill("$unreadCount unread", PrimaryBlue)
-                        StatPill("${todayItems.size} today", SuccessColor)
-                        StatPill("${combined.size} loaded", SecondaryText)
+                        StatPill("${uiState.unreadCount} unread", PrimaryBlue)
+                        StatPill("${uiState.todayItems.size} today", SuccessColor)
+                        StatPill("${uiState.combined.size} loaded", SecondaryText)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -320,8 +201,8 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                     ) {
                         CenterFilter.entries.forEach { option ->
                             FilterChip(
-                                selected = filter == option,
-                                onClick = { filter = option },
+                                selected = uiState.filter == option,
+                                onClick = { viewModel.setFilter(option) },
                                 label = { Text(option.label, fontSize = 11.sp) },
                                 modifier = Modifier.height(32.dp)
                             )
@@ -330,16 +211,16 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                 }
             }
 
-            if (tab == CenterTab.Sent) {
+            if (uiState.tab == CenterTab.Sent) {
                 when {
-                    loadingSent -> AppLoaderFullscreen(message = "Loading sent notifications")
-                    sentError != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    uiState.loadingSent -> AppLoaderFullscreen(message = "Loading sent notifications")
+                    uiState.sentError != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(sentError ?: "Could not load", color = SecondaryText, fontSize = 13.sp)
-                            TextButton(onClick = { scope.launch { loadSent() } }) { Text("Retry", color = PrimaryBlue) }
+                            Text(uiState.sentError ?: "Could not load", color = SecondaryText, fontSize = 13.sp)
+                            TextButton(onClick = { viewModel.loadSent() }) { Text("Retry", color = PrimaryBlue) }
                         }
                     }
-                    sent.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    uiState.sent.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("No sent notifications", color = SecondaryText, fontSize = 13.sp)
                     }
                     else -> LazyColumn(
@@ -347,14 +228,14 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(sent, key = { it.group_key ?: it.id }) { item ->
-                            SentCampaignRow(item, onClick = { opened = item })
+                        items(uiState.sent, key = { it.group_key ?: it.id }) { item ->
+                            SentCampaignRow(item, onClick = { viewModel.openNotification(item) })
                         }
                     }
                 }
             } else when {
-                loading -> AppLoaderFullscreen(message = "Loading notification center")
-                combined.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                uiState.loading -> AppLoaderFullscreen(message = "Loading notification center")
+                uiState.combined.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.NotificationsOff, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -367,25 +248,25 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (todayItems.isNotEmpty()) {
+                    if (uiState.todayItems.isNotEmpty()) {
                         item { SectionTitle("Today") }
-                        items(todayItems, key = { "t-${it.id}" }) { item ->
-                            CenterAlertRow(item, onClick = { openItem(item) })
+                        items(uiState.todayItems, key = { "t-${it.id}" }) { item ->
+                            CenterAlertRow(item, onClick = { viewModel.openItem(item) })
                         }
                     }
-                    if (yesterdayItems.isNotEmpty()) {
+                    if (uiState.yesterdayItems.isNotEmpty()) {
                         item { SectionTitle("Yesterday") }
-                        items(yesterdayItems, key = { "y-${it.id}" }) { item ->
-                            CenterAlertRow(item, onClick = { openItem(item) })
+                        items(uiState.yesterdayItems, key = { "y-${it.id}" }) { item ->
+                            CenterAlertRow(item, onClick = { viewModel.openItem(item) })
                         }
                     }
-                    if (earlierItems.isNotEmpty()) {
+                    if (uiState.earlierItems.isNotEmpty()) {
                         item { SectionTitle("Earlier") }
-                        items(earlierItems, key = { "e-${it.id}" }) { item ->
-                            CenterAlertRow(item, onClick = { openItem(item) })
+                        items(uiState.earlierItems, key = { "e-${it.id}" }) { item ->
+                            CenterAlertRow(item, onClick = { viewModel.openItem(item) })
                         }
                     }
-                    if (loadingOlder) {
+                    if (uiState.loadingOlder) {
                         item {
                             Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.Center) {
                                 AppLoaderCompact(size = 24.dp)
@@ -397,7 +278,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
         }
     }
 
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(uiState.opened) { viewModel.openNotification(null) }
 }
 
 @Composable
@@ -549,9 +430,4 @@ private fun centerAccent(item: Notification): Color = when {
     item.type.equals("Warning", true) || item.type.equals("Alert", true) -> WarningColor
     item.type.equals("Error", true) -> ErrorColor
     else -> PrimaryBlue
-}
-
-private fun notificationDay(item: Notification): String {
-    val raw = item.displayDate.trim()
-    return if (raw.length >= 10) raw.take(10) else raw
 }

@@ -14,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,20 +21,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.components.NetworkAvatar
-import com.example.myeduapp.core.ui.theme.OutlineSoft
-import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.ui.theme.PrimaryText
-import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.SuccessColor
 import com.example.myeduapp.core.util.MediaUrlResolver
 import com.example.myeduapp.data.model.AssignmentAttachment
 import com.example.myeduapp.data.model.Notification
-import com.example.myeduapp.data.model.NotificationReceipts
 import com.example.myeduapp.data.model.UserRole
-import com.example.myeduapp.data.repository.CommunicationRepository
 
 @Composable
 fun NotificationDetailDialog(
@@ -44,21 +40,17 @@ fun NotificationDetailDialog(
 ) {
     item ?: return
     val uriHandler = LocalUriHandler.current
-    val repository = remember { CommunicationRepository() }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = "detail-${item.id}") { NotificationDetailViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     val colorScheme = MaterialTheme.colorScheme
     val staffRoles = listOf(UserRole.TEACHER, UserRole.BRANCH_ADMIN, UserRole.SUPER_ADMIN, UserRole.STAFF)
     val showViews = SessionManager.user?.userRole in staffRoles &&
         item.can_view_receipts &&
         !item.group_key.isNullOrBlank()
-    var receipts by remember(item.id) { mutableStateOf<NotificationReceipts?>(null) }
-    var loadingViews by remember(item.id) { mutableStateOf(false) }
 
     LaunchedEffect(item.id, item.group_key, showViews) {
-        if (!showViews) return@LaunchedEffect
-        loadingViews = true
-        repository.getNotificationReceipts(item.group_key!!)
-            .onSuccess { receipts = it }
-        loadingViews = false
+        viewModel.loadReceipts(item.group_key, showViews)
     }
 
     val sourceLabel = item.source?.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() }
@@ -80,7 +72,6 @@ fun NotificationDetailDialog(
                         .padding(horizontal = 24.dp, vertical = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Header
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             modifier = Modifier.size(44.dp),
@@ -114,7 +105,6 @@ fun NotificationDetailDialog(
 
                     HorizontalDivider(color = colorScheme.outlineVariant.copy(alpha = 0.6f))
 
-                    // Description
                     val descriptionText = item.description?.trim().orEmpty().ifBlank { item.message }
                     DetailBlock(label = "Message Details") {
                         Text(
@@ -125,7 +115,6 @@ fun NotificationDetailDialog(
                         )
                     }
 
-                    // Optional Description
                     val optionalText = item.optional_description?.trim().orEmpty()
                     if (optionalText.isNotBlank()) {
                         DetailBlock(label = "Additional Information") {
@@ -138,25 +127,38 @@ fun NotificationDetailDialog(
                         }
                     }
 
-                    // Date
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp), tint = colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(item.displayDate.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurfaceVariant)
+                        Text(
+                            item.displayDate.ifBlank { "—" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant
+                        )
                     }
 
-                    // Attachments with Preview
                     DetailBlock(label = "Attachments") {
                         if (item.attachments.isEmpty()) {
-                            Text("No files attached", style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
+                            Text(
+                                "No files attached",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorScheme.onSurfaceVariant
+                            )
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 item.attachments.forEach { file ->
-                                    val isImage = file.file_type?.contains("image", true) == true || 
-                                                 listOf("jpg", "jpeg", "png", "webp").any { file.file_path.lowercase().endsWith(it) }
-                                    
+                                    val isImage = file.file_type?.contains("image", true) == true ||
+                                        listOf("jpg", "jpeg", "png", "webp").any {
+                                            file.file_path.lowercase().endsWith(it)
+                                        }
+
                                     AttachmentCard(
-                                        file = file, 
+                                        file = file,
                                         isImage = isImage,
                                         onClick = {
                                             MediaUrlResolver.resolve(file.file_url ?: file.file_path)?.let { url ->
@@ -172,11 +174,14 @@ fun NotificationDetailDialog(
                     if (showViews) {
                         DetailBlock(label = "Recipient Views") {
                             when {
-                                loadingViews -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                                uiState.loadingViews -> Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
                                     AppLoaderCompact(size = 24.dp)
                                 }
-                                receipts != null -> {
-                                    val data = receipts!!
+                                uiState.receipts != null -> {
+                                    val data = uiState.receipts!!
                                     Text(
                                         "${data.viewed} of ${data.total} viewed · ${data.pending} pending",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -211,7 +216,11 @@ fun NotificationDetailDialog(
                                                 )
                                                 val sub = listOfNotNull(viewer.role, viewer.audience).joinToString(" · ")
                                                 if (sub.isNotBlank()) {
-                                                    Text(sub, style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                                                    Text(
+                                                        sub,
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = colorScheme.onSurfaceVariant
+                                                    )
                                                 }
                                             }
                                             Text(
@@ -247,7 +256,6 @@ fun NotificationDetailDialog(
     }
 }
 
-
 @Composable
 private fun AttachmentCard(
     file: AssignmentAttachment,
@@ -272,13 +280,20 @@ private fun AttachmentCard(
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                     contentDescription = file.displayName,
                     placeholder = {
-                        Box(Modifier.fillMaxSize().background(colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.InsertDriveFile, contentDescription = null, tint = colorScheme.onSurfaceVariant)
+                        Box(
+                            Modifier.fillMaxSize().background(colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.InsertDriveFile,
+                                contentDescription = null,
+                                tint = colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 )
             }
-            
+
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -300,7 +315,11 @@ private fun AttachmentCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     file.file_size?.let {
-                        Text("${(it / 1024).coerceAtLeast(1)} KB", style = MaterialTheme.typography.labelSmall, color = colorScheme.onSurfaceVariant)
+                        Text(
+                            "${(it / 1024).coerceAtLeast(1)} KB",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 Icon(

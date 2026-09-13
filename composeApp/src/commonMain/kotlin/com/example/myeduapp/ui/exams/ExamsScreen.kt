@@ -18,14 +18,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.Exam
 import com.example.myeduapp.data.model.ExamResult
-import com.example.myeduapp.data.repository.ExamRepository
-import com.example.myeduapp.core.datastore.SessionManager
-import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
@@ -43,27 +41,11 @@ class ExamsScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExamsScreenContent(onBack: (() -> Unit)? = null) {
-    val authState by SessionManager.authState.collectAsState()
-    val user = (authState as? AuthState.Authenticated)?.user ?: return
-    
-    val repository = remember { ExamRepository() }
-    var upcomingExams by remember { mutableStateOf<List<Exam>>(emptyList()) }
-    var results by remember { mutableStateOf<List<ExamResult>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var selectedTab by remember { mutableStateOf(0) }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel { ExamsViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     
     val tabs = listOf("Upcoming", "Results")
-
-    LaunchedEffect(Unit) {
-        isLoading = true
-        val examsResult = repository.getUpcomingExams()
-        val resultsResult = repository.getStudentResults(user.id)
-        
-        if (examsResult.isSuccess) upcomingExams = examsResult.getOrNull() ?: emptyList()
-        if (resultsResult.isSuccess) results = resultsResult.getOrNull() ?: emptyList()
-        
-        isLoading = false
-    }
 
     Scaffold(
         topBar = {
@@ -86,25 +68,25 @@ fun ExamsScreenContent(onBack: (() -> Unit)? = null) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(
-                selectedTabIndex = selectedTab,
+                selectedTabIndex = uiState.selectedTab,
                 containerColor = Color.White,
                 contentColor = PrimaryBlue
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = uiState.selectedTab == index,
+                        onClick = { viewModel.onTabSelected(index) },
                         text = { Text(title) }
                     )
                 }
             }
             
-            if (isLoading) {
+            if (uiState.isLoading) {
                 AppLoaderFullscreen(message = "Loading exams")
             } else {
-                when (selectedTab) {
-                    0 -> UpcomingExamsList(upcomingExams)
-                    1 -> ResultsList(results)
+                when (uiState.selectedTab) {
+                    0 -> UpcomingExamsList(uiState.upcomingExams)
+                    1 -> ResultsList(uiState.results)
                 }
             }
         }

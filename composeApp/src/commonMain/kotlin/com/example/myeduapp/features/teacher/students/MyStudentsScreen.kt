@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -30,97 +31,42 @@ import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.data.model.FilterOption
-import com.example.myeduapp.data.model.GradeOption
 import com.example.myeduapp.data.model.Student
-import com.example.myeduapp.data.model.UserRole
-import com.example.myeduapp.data.repository.BranchRepository
-import com.example.myeduapp.data.repository.ClassRepository
-import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.features.teacher.student360.Student360Screen
-import kotlinx.coroutines.delay
 
 class MyStudentsScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val repository = remember { StudentRepository() }
-        val classRepository = remember { ClassRepository() }
-        val branchRepository = remember { BranchRepository() }
+        val viewModel = rememberScreenModel { MyStudentsViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
         val academicYearFilter = rememberAcademicYearFilter()
-        val role = SessionManager.user?.userRole
-        val showBranchFilter = role == UserRole.SUPER_ADMIN
 
-        var students by remember { mutableStateOf<List<Student>>(emptyList()) }
-        var branchOptions by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
-        var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
-        var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
-        var isLoading by remember { mutableStateOf(false) }
-
-        var searchQuery by remember { mutableStateOf("") }
-        var selectedBranchId by remember { mutableStateOf<String?>(null) }
-        var selectedGrade by remember { mutableStateOf<String?>(null) }
-        var selectedSection by remember { mutableStateOf<String?>(null) }
-
-        val gradeOptions = remember(grades) {
-            grades.map { FilterOption(value = it.value, label = it.label) }
-        }
-        val selectedBranchInt = selectedBranchId?.toIntOrNull()
-
-        LaunchedEffect(showBranchFilter) {
-            if (showBranchFilter) {
-                branchRepository.getBranchFilterOptions().onSuccess { branchOptions = it }
-            }
-        }
-
-        LaunchedEffect(academicYearFilter.selectedYearId, selectedBranchId, showBranchFilter) {
+        LaunchedEffect(academicYearFilter.selectedYearId, uiState.selectedBranchId, uiState.showBranchFilter) {
             if (!academicYearFilter.isReady) return@LaunchedEffect
-            classRepository.getGrades(branchId = if (showBranchFilter) selectedBranchInt else null)
-                .onSuccess { grades = it }
-            selectedGrade = null
-            selectedSection = null
+            viewModel.loadGrades()
         }
 
-        LaunchedEffect(selectedGrade, selectedBranchId, showBranchFilter) {
-            classRepository.getSections(
-                grade = selectedGrade,
-                branchId = if (showBranchFilter) selectedBranchInt else null
-            ).onSuccess { sections = it }
-            if (selectedGrade == null) selectedSection = null
+        LaunchedEffect(uiState.selectedGrade, uiState.selectedBranchId, uiState.showBranchFilter) {
+            viewModel.loadSections()
         }
 
         LaunchedEffect(
             academicYearFilter.isReady,
             academicYearFilter.selectedYearId,
-            searchQuery,
-            selectedBranchId,
-            selectedGrade,
-            selectedSection
+            uiState.searchQuery,
+            uiState.selectedBranchId,
+            uiState.selectedGrade,
+            uiState.selectedSection
         ) {
             if (!academicYearFilter.isReady || academicYearFilter.selectedYearId == null) return@LaunchedEffect
-            if (searchQuery.length >= 2 || searchQuery.isEmpty()) {
-                isLoading = true
-                students = emptyList()
-                if (searchQuery.isNotEmpty()) delay(500)
-                val yearId = academicYearFilter.selectedYearId
-                academicYearFilter.selectedYear?.let { year ->
-                    SessionManager.setAcademicYear(year.id, year.name)
-                }
-                repository.getStudents(
-                    query = searchQuery.ifBlank { null },
-                    grade = selectedGrade,
-                    section = selectedSection,
-                    academicYearId = yearId,
-                    branchId = if (showBranchFilter) selectedBranchInt else null
-                ).onSuccess { students = it }
-                isLoading = false
+            academicYearFilter.selectedYear?.let { year ->
+                SessionManager.setAcademicYear(year.id, year.name)
             }
+            viewModel.loadStudents(academicYearFilter.selectedYearId)
         }
 
-        val hasActiveFilters = academicYearFilter.selectedYearId != null ||
-            selectedBranchId != null ||
-            selectedGrade != null ||
-            selectedSection != null
+        val hasActiveFilters = academicYearFilter.selectedYearId != null || uiState.hasActiveFilters
 
         Scaffold(
             topBar = {
@@ -129,14 +75,14 @@ class MyStudentsScreen : Screen {
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     placeholder = { Text("Search by name, roll no...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                             }
                         }
@@ -177,7 +123,7 @@ class MyStudentsScreen : Screen {
                     )
                 }
 
-                if (showBranchFilter) {
+                if (uiState.showBranchFilter) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -185,13 +131,9 @@ class MyStudentsScreen : Screen {
                     ) {
                         FilterOptionDropdown(
                             label = "Branch",
-                            options = branchOptions,
-                            selectedValue = selectedBranchId,
-                            onOptionSelected = {
-                                selectedBranchId = it
-                                selectedGrade = null
-                                selectedSection = null
-                            },
+                            options = uiState.branchOptions,
+                            selectedValue = uiState.selectedBranchId,
+                            onOptionSelected = viewModel::onBranchSelected,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -204,20 +146,17 @@ class MyStudentsScreen : Screen {
                 ) {
                     FilterOptionDropdown(
                         label = "Class",
-                        options = gradeOptions,
-                        selectedValue = selectedGrade,
-                        onOptionSelected = {
-                            selectedGrade = it
-                            selectedSection = null
-                        },
+                        options = uiState.gradeOptions,
+                        selectedValue = uiState.selectedGrade,
+                        onOptionSelected = viewModel::onGradeSelected,
                         modifier = Modifier.weight(1f)
                     )
 
                     FilterOptionDropdown(
                         label = "Section",
-                        options = sections,
-                        selectedValue = selectedSection,
-                        onOptionSelected = { selectedSection = it },
+                        options = uiState.sections,
+                        selectedValue = uiState.selectedSection,
+                        onOptionSelected = viewModel::onSectionSelected,
                         modifier = Modifier.weight(1f)
                     )
 
@@ -227,20 +166,18 @@ class MyStudentsScreen : Screen {
                                 val current = academicYearFilter.academicYears.find { it.is_current }
                                     ?: academicYearFilter.academicYears.firstOrNull()
                                 current?.let { academicYearFilter.onYearSelected(it.id) }
-                                selectedBranchId = null
-                                selectedGrade = null
-                                selectedSection = null
+                                viewModel.clearClassFilters()
                             }
                         )
                     }
                 }
 
-                if (isLoading) {
+                if (uiState.isLoading) {
                     AppLoaderFullscreen(message = "Loading students")
-                } else if (students.isEmpty()) {
+                } else if (uiState.students.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (searchQuery.isNotEmpty() || hasActiveFilters)
+                            if (uiState.searchQuery.isNotEmpty() || hasActiveFilters)
                                 "No students found with current filters"
                             else "No students available",
                             color = SecondaryText
@@ -252,7 +189,7 @@ class MyStudentsScreen : Screen {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(students) { student ->
+                        items(uiState.students) { student ->
                             StudentCard(student) {
                                 navigator.push(Student360Screen(student))
                             }

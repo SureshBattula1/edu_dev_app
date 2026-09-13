@@ -20,10 +20,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.UserRole
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
-import com.example.myeduapp.data.repository.DashboardRepository
 import com.example.myeduapp.data.model.DashboardResponse
 import com.example.myeduapp.data.model.attendancePercent
 import com.example.myeduapp.data.model.pendingFeeLabel
@@ -46,15 +48,10 @@ fun DashboardScreen(
     val user = (authState as? AuthState.Authenticated)?.user ?: return
     val role = user.userRole
     val colorScheme = MaterialTheme.colorScheme
-    
-    val repository = remember { DashboardRepository() }
-    var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
 
-    LaunchedEffect(Unit) {
-        repository.getDashboard().onSuccess {
-            dashboardData = it
-        }
-    }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = "dashboard") { DashboardViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         containerColor = colorScheme.background
@@ -74,7 +71,7 @@ fun DashboardScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    StatsSection(role, dashboardData)
+                    StatsSection(role, uiState.dashboardData)
 
                     Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
                     QuickActionsGrid(role, onNavigate)

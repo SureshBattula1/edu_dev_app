@@ -26,21 +26,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
@@ -48,14 +45,7 @@ import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.data.model.FilterOption
-import com.example.myeduapp.data.model.GradeOption
 import com.example.myeduapp.data.model.Teacher
-import com.example.myeduapp.data.model.UserRole
-import com.example.myeduapp.data.repository.BranchRepository
-import com.example.myeduapp.data.repository.ClassRepository
-import com.example.myeduapp.data.repository.TeacherRepository
-import kotlinx.coroutines.delay
 
 /**
  * Teachers list mirrors Students filters by role:
@@ -66,61 +56,8 @@ class MyTeachersScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val repository = remember { TeacherRepository() }
-        val branchRepository = remember { BranchRepository() }
-        val classRepository = remember { ClassRepository() }
-        val role = SessionManager.user?.userRole
-        val showBranchFilter = role == UserRole.SUPER_ADMIN
-        val showClassSectionFilters = role == UserRole.BRANCH_ADMIN
-
-        var teachers by remember { mutableStateOf<List<Teacher>>(emptyList()) }
-        var branchOptions by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
-        var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
-        var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
-        var isLoading by remember { mutableStateOf(false) }
-        var searchQuery by remember { mutableStateOf("") }
-        var selectedBranchId by remember { mutableStateOf<String?>(null) }
-        var selectedGrade by remember { mutableStateOf<String?>(null) }
-        var selectedSection by remember { mutableStateOf<String?>(null) }
-
-        val gradeOptions = remember(grades) {
-            grades.map { FilterOption(value = it.value, label = it.label) }
-        }
-
-        LaunchedEffect(showBranchFilter) {
-            if (showBranchFilter) {
-                branchRepository.getBranchFilterOptions().onSuccess { branchOptions = it }
-            }
-        }
-
-        LaunchedEffect(showClassSectionFilters) {
-            if (showClassSectionFilters) {
-                classRepository.getGrades().onSuccess { grades = it }
-            }
-        }
-
-        LaunchedEffect(selectedGrade, showClassSectionFilters) {
-            if (!showClassSectionFilters) return@LaunchedEffect
-            classRepository.getSections(selectedGrade).onSuccess { sections = it }
-            if (selectedGrade == null) selectedSection = null
-        }
-
-        LaunchedEffect(searchQuery, selectedBranchId, selectedGrade, selectedSection) {
-            if (searchQuery.length >= 2 || searchQuery.isEmpty()) {
-                isLoading = true
-                teachers = emptyList()
-                if (searchQuery.isNotEmpty()) delay(500)
-                repository.getTeachers(
-                    query = searchQuery.ifBlank { null },
-                    branchId = if (showBranchFilter) selectedBranchId?.toIntOrNull() else null,
-                    grade = if (showClassSectionFilters) selectedGrade else null,
-                    section = if (showClassSectionFilters) selectedSection else null
-                ).onSuccess { teachers = it }
-                isLoading = false
-            }
-        }
-
-        val hasActiveFilters = selectedBranchId != null || selectedGrade != null || selectedSection != null
+        val viewModel = rememberScreenModel { MyTeachersViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
 
         Scaffold(
             topBar = {
@@ -129,14 +66,14 @@ class MyTeachersScreen : Screen {
         ) { padding ->
             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                 OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    value = uiState.searchQuery,
+                    onValueChange = viewModel::onSearchQueryChange,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     placeholder = { Text("Search by name, employee id...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
                                 Icon(Icons.Default.Close, contentDescription = null)
                             }
                         }
@@ -144,7 +81,7 @@ class MyTeachersScreen : Screen {
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                if (showBranchFilter) {
+                if (uiState.showBranchFilter) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -152,18 +89,18 @@ class MyTeachersScreen : Screen {
                     ) {
                         FilterOptionDropdown(
                             label = "Branch",
-                            options = branchOptions,
-                            selectedValue = selectedBranchId,
-                            onOptionSelected = { selectedBranchId = it },
+                            options = uiState.branchOptions,
+                            selectedValue = uiState.selectedBranchId,
+                            onOptionSelected = viewModel::onBranchSelected,
                             modifier = Modifier.weight(1f)
                         )
-                        if (hasActiveFilters) {
-                            ClearFiltersButton(onClear = { selectedBranchId = null })
+                        if (uiState.hasActiveFilters) {
+                            ClearFiltersButton(onClear = viewModel::clearBranchFilter)
                         }
                     }
                 }
 
-                if (showClassSectionFilters) {
+                if (uiState.showClassSectionFilters) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -171,38 +108,30 @@ class MyTeachersScreen : Screen {
                     ) {
                         FilterOptionDropdown(
                             label = "Class",
-                            options = gradeOptions,
-                            selectedValue = selectedGrade,
-                            onOptionSelected = {
-                                selectedGrade = it
-                                selectedSection = null
-                            },
+                            options = uiState.gradeOptions,
+                            selectedValue = uiState.selectedGrade,
+                            onOptionSelected = viewModel::onGradeSelected,
                             modifier = Modifier.weight(1f)
                         )
                         FilterOptionDropdown(
                             label = "Section",
-                            options = sections,
-                            selectedValue = selectedSection,
-                            onOptionSelected = { selectedSection = it },
+                            options = uiState.sections,
+                            selectedValue = uiState.selectedSection,
+                            onOptionSelected = viewModel::onSectionSelected,
                             modifier = Modifier.weight(1f)
                         )
-                        if (hasActiveFilters) {
-                            ClearFiltersButton(
-                                onClear = {
-                                    selectedGrade = null
-                                    selectedSection = null
-                                }
-                            )
+                        if (uiState.hasActiveFilters) {
+                            ClearFiltersButton(onClear = viewModel::clearClassFilters)
                         }
                     }
                 }
 
-                if (isLoading) {
+                if (uiState.isLoading) {
                     AppLoaderFullscreen(message = "Loading teachers")
-                } else if (teachers.isEmpty()) {
+                } else if (uiState.teachers.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            if (searchQuery.isNotEmpty() || hasActiveFilters)
+                            if (uiState.searchQuery.isNotEmpty() || uiState.hasActiveFilters)
                                 "No teachers found with current filters"
                             else "No teachers available",
                             color = SecondaryText
@@ -214,7 +143,7 @@ class MyTeachersScreen : Screen {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(teachers) { teacher ->
+                        items(uiState.teachers) { teacher ->
                             TeacherCard(teacher)
                         }
                     }

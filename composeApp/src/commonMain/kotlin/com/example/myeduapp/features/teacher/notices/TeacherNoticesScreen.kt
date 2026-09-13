@@ -14,11 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.Announcement
-import com.example.myeduapp.data.repository.CommunicationRepository
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
@@ -34,20 +34,9 @@ class TeacherNoticesScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherNoticesScreenContent(onBack: (() -> Unit)? = null) {
-    val repository = remember { CommunicationRepository() }
-    var noticeList by remember { mutableStateOf<List<Announcement>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        repository.getAnnouncements().onSuccess {
-            noticeList = it
-            isLoading = false
-        }.onFailure {
-            error = it.message
-            isLoading = false
-        }
-    }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel { TeacherNoticesViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -69,11 +58,11 @@ fun TeacherNoticesScreenContent(onBack: (() -> Unit)? = null) {
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (isLoading) {
+            if (uiState.isLoading) {
                 AppLoaderFullscreen(message = "Loading notices")
-            } else if (error != null) {
-                Text("Error: $error", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.error)
-            } else if (noticeList.isEmpty()) {
+            } else if (uiState.error != null) {
+                Text("Error: ${uiState.error}", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.error)
+            } else if (uiState.noticeList.isEmpty()) {
                 Text("No notices found", modifier = Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
@@ -81,7 +70,7 @@ fun TeacherNoticesScreenContent(onBack: (() -> Unit)? = null) {
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(noticeList) { notice ->
+                    items(uiState.noticeList) { notice ->
                         NoticeCard(notice)
                     }
                 }

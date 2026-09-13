@@ -12,15 +12,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppLoader
 import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
@@ -28,60 +28,30 @@ import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.data.model.FilterOption
-import com.example.myeduapp.data.model.GradeOption
 import com.example.myeduapp.data.model.SchoolClass
-import com.example.myeduapp.data.repository.ClassRepository
 
 fun schoolClassFrom(grade: String, section: String): SchoolClass =
     SchoolClass(id = 0, grade = grade, section = section)
 
 @Composable
 fun rememberAttendanceClassSectionFilters(): AttendanceClassSectionState {
-    val classRepository = remember { ClassRepository() }
-    var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
-    var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
-    var selectedGrade by remember { mutableStateOf<String?>(null) }
-    var selectedSection by remember { mutableStateOf<String?>(null) }
-    var isLoadingGrades by remember { mutableStateOf(true) }
-
-    val gradeOptions = remember(grades) {
-        grades.map { FilterOption(value = it.value, label = it.label) }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = "attendance-filters") {
+        AttendanceFiltersViewModel()
     }
-
-    LaunchedEffect(Unit) {
-        isLoadingGrades = true
-        classRepository.getGrades().onSuccess { grades = it }
-        isLoadingGrades = false
-    }
-
-    LaunchedEffect(selectedGrade) {
-        classRepository.getSections(selectedGrade).onSuccess { sections = it }
-        if (selectedGrade == null) selectedSection = null
-    }
-
-    val selectedClass = remember(selectedGrade, selectedSection) {
-        if (selectedGrade != null && selectedSection != null) {
-            schoolClassFrom(selectedGrade!!, selectedSection!!)
-        } else null
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     return AttendanceClassSectionState(
-        gradeOptions = gradeOptions,
-        sectionOptions = sections,
-        selectedGrade = selectedGrade,
-        selectedSection = selectedSection,
-        selectedClass = selectedClass,
-        isLoadingGrades = isLoadingGrades,
-        isReady = selectedGrade != null && selectedSection != null,
-        onGradeSelected = {
-            selectedGrade = it
-            selectedSection = null
-        },
-        onSectionSelected = { selectedSection = it },
-        onClear = {
-            selectedGrade = null
-            selectedSection = null
-        }
+        gradeOptions = uiState.gradeOptions,
+        sectionOptions = uiState.sectionOptions,
+        selectedGrade = uiState.selectedGrade,
+        selectedSection = uiState.selectedSection,
+        selectedClass = uiState.selectedClass,
+        isLoadingGrades = uiState.isLoadingGrades,
+        isReady = uiState.isReady,
+        onGradeSelected = viewModel::onGradeSelected,
+        onSectionSelected = viewModel::onSectionSelected,
+        onClear = viewModel::onClear
     )
 }
 

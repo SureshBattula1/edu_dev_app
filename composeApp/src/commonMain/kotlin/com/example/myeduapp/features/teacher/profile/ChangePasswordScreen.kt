@@ -9,31 +9,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.data.repository.AuthRepository
-import kotlinx.coroutines.launch
 
 class ChangePasswordScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val authRepository = remember { AuthRepository() }
-        val scope = rememberCoroutineScope()
+        val viewModel = rememberScreenModel { ChangePasswordViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
 
-        var oldPassword by remember { mutableStateOf("") }
-        var newPassword by remember { mutableStateOf("") }
-        var confirmPassword by remember { mutableStateOf("") }
-        var isLoading by remember { mutableStateOf(false) }
-        var errorMessage by remember { mutableStateOf<String?>(null) }
-
-        val isFormValid = oldPassword.isNotBlank() && 
-                         newPassword.length >= 6 && 
-                         newPassword == confirmPassword
+        LaunchedEffect(uiState.updateSuccess) {
+            if (uiState.updateSuccess) navigator.pop()
+        }
 
         Scaffold(
             topBar = {
@@ -59,8 +52,8 @@ class ChangePasswordScreen : Screen {
                     .padding(24.dp)
             ) {
                 OutlinedTextField(
-                    value = oldPassword,
-                    onValueChange = { oldPassword = it },
+                    value = uiState.oldPassword,
+                    onValueChange = viewModel::onOldPasswordChange,
                     label = { Text("Current Password") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
@@ -70,8 +63,8 @@ class ChangePasswordScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = newPassword,
-                    onValueChange = { newPassword = it },
+                    value = uiState.newPassword,
+                    onValueChange = viewModel::onNewPasswordChange,
                     label = { Text("New Password (min 6 chars)") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
@@ -81,40 +74,28 @@ class ChangePasswordScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    value = uiState.confirmPassword,
+                    onValueChange = viewModel::onConfirmPasswordChange,
                     label = { Text("Confirm New Password") },
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
                     singleLine = true,
-                    isError = confirmPassword.isNotEmpty() && confirmPassword != newPassword
+                    isError = uiState.confirmPassword.isNotEmpty() && uiState.confirmPassword != uiState.newPassword
                 )
                 
-                if (errorMessage != null) {
+                if (uiState.errorMessage != null) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            val result = authRepository.changePassword(oldPassword, newPassword, confirmPassword)
-                            isLoading = false
-                            if (result.isSuccess) {
-                                navigator.pop()
-                            } else {
-                                errorMessage = result.exceptionOrNull()?.message ?: "Failed to change password"
-                            }
-                        }
-                    },
+                    onClick = viewModel::changePassword,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = !isLoading && isFormValid
+                    enabled = !uiState.isLoading && uiState.isFormValid
                 ) {
-                    if (isLoading) {
+                    if (uiState.isLoading) {
                         AppLoaderCompact(size = 28.dp)
                     } else {
                         Text("Update Password")

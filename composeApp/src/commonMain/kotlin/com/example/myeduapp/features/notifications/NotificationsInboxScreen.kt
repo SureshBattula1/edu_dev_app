@@ -36,18 +36,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -61,28 +60,6 @@ import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.Notification
-import com.example.myeduapp.data.repository.CommunicationRepository
-import kotlinx.coroutines.launch
-
-private enum class NotificationFilter(val label: String) {
-    All("All"),
-    Assignment("Assignment"),
-    Attendance("Attendance"),
-    Unread("Unread"),
-    Info("Info"),
-    Warning("Warning"),
-    Alert("Alert");
-
-    fun toParams(): Triple<String, String?, String?> = when (this) {
-        All -> Triple("all", null, null)
-        Assignment -> Triple("all", null, "assignment")
-        Attendance -> Triple("all", null, "attendance")
-        Unread -> Triple("unread", null, null)
-        Info -> Triple("all", "Info", null)
-        Warning -> Triple("all", "Warning", null)
-        Alert -> Triple("all", "Alert", null)
-    }
-}
 
 class NotificationsInboxScreen : Screen {
     @Composable
@@ -152,58 +129,28 @@ private fun CompactNotificationsList(
     onUnreadCount: (Int) -> Unit = {},
     showFilters: Boolean = false
 ) {
-    val repository = remember { CommunicationRepository() }
-    var notifications by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var opened by remember { mutableStateOf<Notification?>(null) }
-    var filter by remember { mutableStateOf(NotificationFilter.All) }
-    val scope = rememberCoroutineScope()
-    val unreadCount = notifications.count { !it.isRead }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = "compact") { CompactNotificationsViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(filter) {
-        isLoading = true
-        val (status, type, source) = filter.toParams()
-        repository.getNotificationsPage(status = status, type = type, source = source, perPage = 20)
-            .onSuccess { notifications = it.items }
-            .onFailure {
-                repository.getNotifications(unreadOnly = false, limit = 20).onSuccess { notifications = it }
-            }
-        isLoading = false
-        onUnreadCount(notifications.count { !it.isRead })
+    LaunchedEffect(uiState.filter) {
+        viewModel.load(onUnreadCount)
     }
 
     NotificationListChrome(
         modifier = modifier,
         title = "Alerts",
-        unreadCount = unreadCount,
-        isLoading = isLoading,
-        items = notifications,
+        unreadCount = uiState.unreadCount,
+        isLoading = uiState.isLoading,
+        items = uiState.notifications,
         emptyText = "No notifications yet",
         filters = if (showFilters) NotificationFilter.entries else emptyList(),
-        selectedFilter = filter,
-        onFilter = { filter = it },
-        onMarkAll = {
-            scope.launch {
-                repository.markAllAsRead().onSuccess {
-                    notifications = notifications.map { it.copy(is_read = true, read_at = "now") }
-                    onUnreadCount(0)
-                }
-            }
-        },
-        onOpen = { notification ->
-            opened = notification
-            if (!notification.isRead) {
-                scope.launch {
-                    repository.markAsRead(notification.id)
-                    notifications = notifications.map {
-                        if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it
-                    }
-                    onUnreadCount(notifications.count { !it.isRead })
-                }
-            }
-        }
+        selectedFilter = uiState.filter,
+        onFilter = { viewModel.setFilter(it) },
+        onMarkAll = { viewModel.markAllAsRead(onUnreadCount) },
+        onOpen = { notification -> viewModel.markOpened(notification, onUnreadCount) }
     )
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(uiState.opened) { viewModel.openNotification(null) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,87 +159,26 @@ private fun PagedNotificationsFeed(
     modifier: Modifier,
     onUnreadCount: (Int) -> Unit = {}
 ) {
-    val repository = remember { CommunicationRepository() }
-    var filter by remember { mutableStateOf(NotificationFilter.All) }
-    var today by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var older by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var olderPage by remember { mutableStateOf(1) }
-    var olderHasMore by remember { mutableStateOf(false) }
-    var loadingToday by remember { mutableStateOf(true) }
-    var loadingOlder by remember { mutableStateOf(false) }
-    var opened by remember { mutableStateOf<Notification?>(null) }
-    val scope = rememberCoroutineScope()
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel(tag = "paged") { PagedNotificationsViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    val allItems = today + older
-    val unreadCount = allItems.count { !it.isRead }
 
-    fun filterParams(): Triple<String, String?, String?> = filter.toParams()
-
-    suspend fun loadToday() {
-        val (status, type, source) = filterParams()
-        repository.getNotificationsPage(
-            status = status,
-            type = type,
-            source = source,
-            period = "today",
-            page = 1,
-            perPage = 50
-        ).onSuccess { today = it.items }
+    LaunchedEffect(uiState.filter) {
+        viewModel.reload(onUnreadCount)
     }
 
-    suspend fun loadOlder(reset: Boolean) {
-        if (loadingOlder) return
-        loadingOlder = true
-        val nextPage = if (reset) 1 else olderPage + 1
-        val (status, type, source) = filterParams()
-        repository.getNotificationsPage(
-            status = status,
-            type = type,
-            source = source,
-            period = "older",
-            page = nextPage,
-            perPage = 20
-        ).onSuccess { page ->
-            older = if (reset) page.items else older + page.items.filter { item -> older.none { it.id == item.id } }
-            olderPage = page.page
-            olderHasMore = page.hasMore
-        }
-        loadingOlder = false
-    }
-
-    LaunchedEffect(filter) {
-        loadingToday = true
-        today = emptyList()
-        older = emptyList()
-        olderPage = 1
-        olderHasMore = false
-        loadToday()
-        loadOlder(reset = true)
-        loadingToday = false
-        onUnreadCount((today + older).count { !it.isRead })
-    }
-
-    val shouldLoadMore by remember {
+    val olderHasMore = uiState.olderHasMore
+    val loadingOlder = uiState.loadingOlder
+    val shouldLoadMore by remember(olderHasMore, loadingOlder) {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val total = listState.layoutInfo.totalItemsCount
             olderHasMore && !loadingOlder && total > 0 && last >= total - 3
         }
     }
-    LaunchedEffect(shouldLoadMore, filter) {
-        if (shouldLoadMore) loadOlder(reset = false)
-    }
-
-    fun markOpened(notification: Notification) {
-        opened = notification
-        if (!notification.isRead) {
-            scope.launch {
-                repository.markAsRead(notification.id)
-                today = today.map { if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it }
-                older = older.map { if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it }
-                onUnreadCount((today + older).count { !it.isRead })
-            }
-        }
+    LaunchedEffect(shouldLoadMore, uiState.filter) {
+        if (shouldLoadMore) viewModel.loadMoreIfNeeded()
     }
 
     Column(modifier = modifier) {
@@ -306,17 +192,9 @@ private fun PagedNotificationsFeed(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
-            if (unreadCount > 0) {
-                Badge(containerColor = PrimaryBlue) { Text("$unreadCount") }
-                TextButton(onClick = {
-                    scope.launch {
-                        repository.markAllAsRead().onSuccess {
-                            today = today.map { it.copy(is_read = true, read_at = "now") }
-                            older = older.map { it.copy(is_read = true, read_at = "now") }
-                            onUnreadCount(0)
-                        }
-                    }
-                }) {
+            if (uiState.unreadCount > 0) {
+                Badge(containerColor = PrimaryBlue) { Text("${uiState.unreadCount}") }
+                TextButton(onClick = { viewModel.markAllAsRead(onUnreadCount) }) {
                     Icon(Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Mark all read")
@@ -333,16 +211,19 @@ private fun PagedNotificationsFeed(
         ) {
             NotificationFilter.entries.forEach { option ->
                 FilterChip(
-                    selected = filter == option,
-                    onClick = { filter = option },
+                    selected = uiState.filter == option,
+                    onClick = { viewModel.setFilter(option) },
                     label = { Text(option.label, fontSize = 12.sp) }
                 )
             }
         }
 
         when {
-            loadingToday -> AppLoaderFullscreen(message = "Loading notifications")
-            today.isEmpty() && older.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            uiState.loadingToday -> AppLoaderFullscreen(message = "Loading notifications")
+            uiState.today.isEmpty() && uiState.older.isEmpty() -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
                 Text("No notifications for this filter", color = SecondaryText)
             }
             else -> LazyColumn(
@@ -354,29 +235,40 @@ private fun PagedNotificationsFeed(
                 item {
                     SectionLabel("Today")
                 }
-                if (today.isEmpty()) {
+                if (uiState.today.isEmpty()) {
                     item {
-                        Text("Nothing new today", fontSize = 13.sp, color = SecondaryText, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(
+                            "Nothing new today",
+                            fontSize = 13.sp,
+                            color = SecondaryText,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                     }
                 } else {
-                    items(today, key = { "today-${it.id}" }) { notification ->
-                        NotificationCard(notification, onClick = { markOpened(notification) })
+                    items(uiState.today, key = { "today-${it.id}" }) { notification ->
+                        NotificationCard(
+                            notification,
+                            onClick = { viewModel.markOpened(notification, onUnreadCount) }
+                        )
                     }
                 }
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
                     SectionLabel("Earlier")
                 }
-                if (older.isEmpty() && !loadingOlder) {
+                if (uiState.older.isEmpty() && !uiState.loadingOlder) {
                     item {
                         Text("No earlier notifications", fontSize = 13.sp, color = SecondaryText)
                     }
                 } else {
-                    items(older, key = { "older-${it.id}" }) { notification ->
-                        NotificationCard(notification, onClick = { markOpened(notification) })
+                    items(uiState.older, key = { "older-${it.id}" }) { notification ->
+                        NotificationCard(
+                            notification,
+                            onClick = { viewModel.markOpened(notification, onUnreadCount) }
+                        )
                     }
                 }
-                if (loadingOlder) {
+                if (uiState.loadingOlder) {
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -390,7 +282,7 @@ private fun PagedNotificationsFeed(
         }
     }
 
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(uiState.opened) { viewModel.openNotification(null) }
 }
 
 @Composable

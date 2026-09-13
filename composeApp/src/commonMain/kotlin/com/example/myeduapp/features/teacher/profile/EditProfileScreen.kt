@@ -8,31 +8,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.myeduapp.core.datastore.SessionManager
-import com.example.myeduapp.core.datastore.AuthState
-import com.example.myeduapp.data.repository.AuthRepository
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import kotlinx.coroutines.launch
 
 class EditProfileScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val authState by SessionManager.authState.collectAsState()
-        val user = (authState as? AuthState.Authenticated)?.user ?: return
-        val authRepository = remember { AuthRepository() }
-        val scope = rememberCoroutineScope()
+        val viewModel = rememberScreenModel { EditProfileViewModel() }
+        val uiState by viewModel.uiState.collectAsState()
 
-        var firstName by remember { mutableStateOf(user.first_name) }
-        var lastName by remember { mutableStateOf(user.last_name) }
-        var phone by remember { mutableStateOf(user.phone ?: "") }
-        var isLoading by remember { mutableStateOf(false) }
-        var errorMessage by remember { mutableStateOf<String?>(null) }
+        LaunchedEffect(uiState.updateSuccess) {
+            if (uiState.updateSuccess) navigator.pop()
+        }
 
         Scaffold(
             topBar = {
@@ -58,8 +51,8 @@ class EditProfileScreen : Screen {
                     .padding(24.dp)
             ) {
                 OutlinedTextField(
-                    value = firstName,
-                    onValueChange = { firstName = it },
+                    value = uiState.firstName,
+                    onValueChange = viewModel::onFirstNameChange,
                     label = { Text("First Name") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -68,8 +61,8 @@ class EditProfileScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = lastName,
-                    onValueChange = { lastName = it },
+                    value = uiState.lastName,
+                    onValueChange = viewModel::onLastNameChange,
                     label = { Text("Last Name") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
@@ -78,38 +71,26 @@ class EditProfileScreen : Screen {
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
+                    value = uiState.phone,
+                    onValueChange = viewModel::onPhoneChange,
                     label = { Text("Phone Number") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 
-                if (errorMessage != null) {
+                if (uiState.errorMessage != null) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                    Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error)
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
-                    onClick = {
-                        scope.launch {
-                            isLoading = true
-                            errorMessage = null
-                            val result = authRepository.updateProfile(firstName, lastName, phone.ifBlank { null })
-                            isLoading = false
-                            if (result.isSuccess) {
-                                navigator.pop()
-                            } else {
-                                errorMessage = result.exceptionOrNull()?.message ?: "Failed to update profile"
-                            }
-                        }
-                    },
+                    onClick = viewModel::saveProfile,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    enabled = !isLoading && firstName.isNotBlank() && lastName.isNotBlank()
+                    enabled = !uiState.isLoading && uiState.firstName.isNotBlank() && uiState.lastName.isNotBlank()
                 ) {
-                    if (isLoading) {
+                    if (uiState.isLoading) {
                         AppLoaderCompact(size = 28.dp)
                     } else {
                         Text("Save Changes")

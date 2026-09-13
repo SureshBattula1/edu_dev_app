@@ -15,17 +15,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
 import com.example.myeduapp.data.model.Exam
-import com.example.myeduapp.data.repository.ExamRepository
 
 class TeacherExamsScreen : Screen {
     @Composable
@@ -38,18 +37,9 @@ class TeacherExamsScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeacherExamsScreenContent(onBack: (() -> Unit)? = null) {
-    val repository = remember { ExamRepository() }
-    var exams by remember { mutableStateOf<List<Exam>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-
-    LaunchedEffect(Unit) {
-        repository.getUpcomingExams().onSuccess {
-            exams = it
-            isLoading = false
-        }.onFailure {
-            isLoading = false
-        }
-    }
+    val screen = LocalNavigator.currentOrThrow.lastItem
+    val viewModel = screen.rememberScreenModel { TeacherExamsViewModel() }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -79,9 +69,9 @@ fun TeacherExamsScreenContent(onBack: (() -> Unit)? = null) {
             }
         }
     ) { padding ->
-        if (isLoading) {
+        if (uiState.isLoading) {
             AppLoaderFullscreen(message = "Loading exams")
-        } else if (exams.isEmpty()) {
+        } else if (uiState.exams.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No exams scheduled", color = SecondaryText)
             }
@@ -91,7 +81,7 @@ fun TeacherExamsScreenContent(onBack: (() -> Unit)? = null) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(exams) { exam ->
+                items(uiState.exams) { exam ->
                     TeacherExamCard(exam) {
                         // Navigate to marks entry or details
                     }
