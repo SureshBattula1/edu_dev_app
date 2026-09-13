@@ -32,6 +32,8 @@ import com.example.myeduapp.core.navigation.NavItem
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.BigBridzDashboardModuleCard
+import com.example.myeduapp.core.ui.components.BigBridzStatCard
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -162,44 +164,44 @@ fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onN
 @Composable
 fun StatsSection(role: UserRole, data: DashboardResponse?) {
     val stats = data?.data
-    val colorScheme = MaterialTheme.colorScheme
+    val iconRegistry = BigBridzIconRegistry
     
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when (role) {
                 UserRole.SUPER_ADMIN -> {
-                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.primary, Modifier.weight(1f))
-                    DashboardStatCard("Branches", stats?.overview?.get("total_branches")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.secondary, Modifier.weight(1f))
+                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Students, Modifier.weight(1f))
+                    DashboardStatCard("Branches", stats?.overview?.get("total_branches")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Branches, Modifier.weight(1f))
                 }
                 UserRole.BRANCH_ADMIN -> {
-                    DashboardStatCard("Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.primary, Modifier.weight(1f))
-                    DashboardStatCard("Teachers", stats?.overview?.get("total_teachers")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.secondary, Modifier.weight(1f))
+                    DashboardStatCard("Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Students, Modifier.weight(1f))
+                    DashboardStatCard("Teachers", stats?.overview?.get("total_teachers")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Teachers, Modifier.weight(1f))
                 }
                 UserRole.TEACHER -> {
-                    DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.primary, Modifier.weight(1f))
+                    DashboardStatCard("My Students", stats?.quick_stats?.get("students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Students, Modifier.weight(1f))
                     val attendance = stats.attendancePercent()
-                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) colorScheme.tertiary else colorScheme.error, Modifier.weight(1f))
+                    DashboardStatCard("Attendance", "$attendance%", iconRegistry.Attendance, Modifier.weight(1f))
                 }
                 UserRole.ACCOUNTANT -> {
-                    DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "₹0", colorScheme.tertiary, Modifier.weight(1f))
-                    DashboardStatCard("Pending", stats.pendingFeeLabel(), colorScheme.error, Modifier.weight(1f))
+                    DashboardStatCard("Today", stats?.financial?.get("today")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "₹0", iconRegistry.Payments, Modifier.weight(1f))
+                    DashboardStatCard("Pending", stats.pendingFeeLabel(), iconRegistry.Fees, Modifier.weight(1f))
                 }
                 UserRole.STUDENT -> {
                     val attendance = stats.attendancePercent()
-                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) colorScheme.tertiary else colorScheme.error, Modifier.weight(1f))
-                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), colorScheme.error, Modifier.weight(1f))
+                    DashboardStatCard("Attendance", "$attendance%", iconRegistry.Attendance, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), iconRegistry.Fees, Modifier.weight(1f))
                 }
                 UserRole.STAFF -> {
-                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", colorScheme.primary, Modifier.weight(1f))
-                    DashboardStatCard("Today Presence", stats?.attendance?.teachers?.present_days?.toString() ?: "0", colorScheme.tertiary, Modifier.weight(1f))
+                    DashboardStatCard("Total Students", stats?.overview?.get("total_students")?.let { (it as? JsonPrimitive)?.contentOrNull } ?: "0", iconRegistry.Students, Modifier.weight(1f))
+                    DashboardStatCard("Today Presence", stats?.attendance?.teachers?.present_days?.toString() ?: "0", iconRegistry.Attendance, Modifier.weight(1f))
                 }
                 UserRole.PARENT -> {
                     val attendance = stats.attendancePercent()
-                    DashboardStatCard("Attendance", "$attendance%", if (attendance > 75) colorScheme.tertiary else colorScheme.error, Modifier.weight(1f))
-                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), colorScheme.error, Modifier.weight(1f))
+                    DashboardStatCard("Attendance", "$attendance%", iconRegistry.Attendance, Modifier.weight(1f))
+                    DashboardStatCard("Pending Fee", stats.pendingFeeLabel(), iconRegistry.Fees, Modifier.weight(1f))
                 }
             }
         }
@@ -207,34 +209,29 @@ fun StatsSection(role: UserRole, data: DashboardResponse?) {
 }
 
 @Composable
-fun DashboardStatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    AppCard(modifier = modifier) {
-        Column(
-            modifier = Modifier.padding(20.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Box(modifier = Modifier.size(10.dp).background(color, CircleShape))
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.displayLarge, fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, letterSpacing = 0.5.sp)
-        }
-    }
+fun DashboardStatCard(label: String, value: String, icon: BigBridzIcon, modifier: Modifier = Modifier) {
+    BigBridzStatCard(
+        icon = icon,
+        value = value,
+        label = label,
+        modifier = modifier
+    )
 }
 
 @Composable
 fun QuickActionsGrid(role: UserRole, onNavigate: (String) -> Unit) {
     val items = AppNavigation.getDrawerItems(role).filter { it.route != Route.Dashboard && it.route != Route.Profile }
     
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        items.chunked(3).forEach { rowItems ->
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        items.chunked(4).forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 rowItems.forEach { item ->
                     ActionCard(item, Modifier.weight(1f), onNavigate)
                 }
-                repeat(3 - rowItems.size) {
+                repeat(4 - rowItems.size) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }

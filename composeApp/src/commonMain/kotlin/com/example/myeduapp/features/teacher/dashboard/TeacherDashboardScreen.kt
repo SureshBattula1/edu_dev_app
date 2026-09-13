@@ -79,11 +79,11 @@ fun TeacherDashboardScreen(
 
                         // Quick Actions
                         Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            QuickActionItem("Attendance", Icons.Default.CheckCircle, colorScheme.primary) { onNavigate(Route.Attendance.path) }
-                            QuickActionItem("Students", Icons.Default.Groups, colorScheme.secondary) { onNavigate("my_students") }
-                            QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, colorScheme.tertiary) { onNavigate("assignments") }
-                            QuickActionItem("Exams", Icons.Default.Quiz, colorScheme.error) { onNavigate(Route.Exams.path) }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            QuickActionItem("Attendance", Icons.Default.CheckCircle, colorScheme.primary, Modifier.weight(1f)) { onNavigate(Route.Attendance.path) }
+                            QuickActionItem("Students", Icons.Default.Groups, colorScheme.secondary, Modifier.weight(1f)) { onNavigate("my_students") }
+                            QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, colorScheme.tertiary, Modifier.weight(1f)) { onNavigate("assignments") }
+                            QuickActionItem("Exams", Icons.Default.Quiz, colorScheme.error, Modifier.weight(1f)) { onNavigate(Route.Exams.path) }
                         }
 
                         AppCard(
@@ -233,11 +233,18 @@ fun TeacherHeroHeader(
 }
 
 @Composable
-fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
+fun QuickActionItem(
+    label: String,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     val icon3D = BigBridzIconRegistry.forRoute(label)
     BigBridzDashboardModuleCard(
         icon = icon3D,
         title = label,
+        modifier = modifier,
         onClick = onClick
     )
 }

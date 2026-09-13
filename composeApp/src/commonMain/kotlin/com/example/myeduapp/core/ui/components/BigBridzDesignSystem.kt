@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,9 +31,9 @@ import com.example.myeduapp.core.ui.theme.SecondaryText
 fun BigBridz3DIconCard(
     icon: BigBridzIcon,
     modifier: Modifier = Modifier,
-    iconSize: Dp = 52.dp,
-    containerSize: Dp = 72.dp,
-    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    iconSize: Dp = 28.dp,
+    containerSize: Dp = 44.dp,
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
 ) {
     Surface(
         modifier = modifier.size(containerSize),
@@ -53,7 +54,45 @@ fun BigBridz3DIconCard(
 }
 
 /**
- * Premium Module Card component for Dashboards.
+ * 2-Column Stat Card component for Dashboards.
+ */
+@Composable
+fun BigBridzStatCard(
+    icon: BigBridzIcon,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    AppCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+        ) {
+            BigBridz3DIcon(
+                icon = icon,
+                size = 36.dp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.displayLarge,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                color = SecondaryText,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+/**
+ * Premium Module Card component for Dashboards (optimized for 4-column row grids).
  */
 @Composable
 fun BigBridzDashboardModuleCard(
@@ -71,42 +110,47 @@ fun BigBridzDashboardModuleCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 4.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(contentAlignment = Alignment.TopEnd) {
                 BigBridz3DIconCard(
                     icon = icon,
-                    iconSize = 48.dp,
-                    containerSize = 64.dp
+                    iconSize = 28.dp,
+                    containerSize = 42.dp,
+                    backgroundColor = colorScheme.primaryContainer.copy(alpha = 0.2f)
                 )
 
                 if (badgeText != null) {
                     Surface(
                         color = colorScheme.error,
                         shape = CircleShape,
-                        modifier = Modifier.offset(x = 6.dp, y = (-4).dp)
+                        modifier = Modifier.offset(x = 4.dp, y = (-2).dp)
                     ) {
                         Text(
                             text = badgeText,
                             color = colorScheme.onError,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                letterSpacing = 0.2.sp,
                 color = colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
