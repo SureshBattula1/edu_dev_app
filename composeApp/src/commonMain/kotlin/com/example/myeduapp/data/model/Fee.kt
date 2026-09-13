@@ -13,7 +13,10 @@ data class FeeDue(
     val paid_amount: Double? = null,
     val remaining_amount: Double? = null,
     val due_date: String = "",
-    val status: String = "Pending"
+    val status: String = "Pending",
+    val student_name: String? = null,
+    val student_roll_no: String? = null,
+    val student_class: String? = null
 ) {
     val displayAmount: Double
         get() = balance_amount
@@ -33,7 +36,10 @@ data class FeePayment(
     val amount_paid: Double = 0.0,
     val payment_date: String = "",
     val payment_method: String = "",
-    val receipt_number: String? = null
+    val receipt_number: String? = null,
+    val student_name: String? = null,
+    val student_roll_no: String? = null,
+    val student_class: String? = null
 ) {
     val displayPaymentDate: String
         get() = payment_date.trim().take(10).ifBlank { payment_date }

@@ -19,4 +19,5 @@ sealed class Route(val path: String) {
     object Profile : Route("profile")
     object EditProfile : Route("edit_profile")
     object ChangePassword : Route("change_password")
+    object Branches : Route("branches")
 }

@@ -61,6 +61,8 @@ import com.example.myeduapp.data.repository.AuthRepository
 import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.data.model.UserRole
+import com.example.myeduapp.features.admin.branches.BranchesScreen
+import com.example.myeduapp.features.admin.branches.BranchDetailScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -255,6 +257,7 @@ class MainScreen : Screen {
                                     scope.launch { drawerState.close() }
                                     when (item.route) {
                                         Route.Dashboard -> { /* Already on dashboard root */ }
+                                        Route.Branches -> navigator.push(BranchesScreen())
                                         Route.MyStudents -> navigator.push(MyStudentsScreen())
                                         Route.Teachers -> navigator.push(MyTeachersScreen())
                                         Route.Assignments -> navigator.push(AssignmentsScreen())
@@ -330,6 +333,7 @@ class MainScreen : Screen {
                     DashboardScreen(
                         onNavigate = { route ->
                             val targetScreen: Screen = when(route) {
+                                Route.Branches.path -> BranchesScreen()
                                 Route.Profile.path -> ProfileScreen()
                                 Route.Student360.path -> Student360Screen()
                                 Route.MyStudents.path -> MyStudentsScreen()

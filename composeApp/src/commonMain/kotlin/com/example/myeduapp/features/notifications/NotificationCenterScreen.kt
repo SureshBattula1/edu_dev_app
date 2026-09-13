@@ -2,18 +2,7 @@ package com.example.myeduapp.features.notifications
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -22,34 +11,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Assignment
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,15 +31,7 @@ import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
-import com.example.myeduapp.core.ui.theme.CardBackground
-import com.example.myeduapp.core.ui.theme.ErrorColor
-import com.example.myeduapp.core.ui.theme.OutlineSoft
-import com.example.myeduapp.core.ui.theme.PrimaryBlue
-import com.example.myeduapp.core.ui.theme.PrimaryText
-import com.example.myeduapp.core.ui.theme.SecondaryBlue
-import com.example.myeduapp.core.ui.theme.SecondaryText
-import com.example.myeduapp.core.ui.theme.SuccessColor
-import com.example.myeduapp.core.ui.theme.WarningColor
+import com.example.myeduapp.core.ui.theme.*
 import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Notification
 import com.example.myeduapp.data.model.UserRole
@@ -128,12 +84,13 @@ fun NotificationCenterContent(onBack: () -> Unit) {
     var tab by remember { mutableStateOf(if (pendingOpenSentNotifications) CenterTab.Sent else CenterTab.Inbox) }
     var filter by remember { mutableStateOf(CenterFilter.All) }
     var query by remember { mutableStateOf("") }
-    var today by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var older by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var olderPage by remember { mutableStateOf(1) }
-    var olderHasMore by remember { mutableStateOf(false) }
+    
+    var notifications by remember { mutableStateOf<List<Notification>>(emptyList()) }
+    var page by remember { mutableStateOf(1) }
+    var hasMore by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
-    var loadingOlder by remember { mutableStateOf(false) }
+    var loadingMore by remember { mutableStateOf(false) }
+    
     var opened by remember { mutableStateOf<Notification?>(null) }
     var sent by remember { mutableStateOf<List<Notification>>(emptyList()) }
     var loadingSent by remember { mutableStateOf(false) }
@@ -148,35 +105,31 @@ fun NotificationCenterContent(onBack: () -> Unit) {
 
     fun params() = filter.toParams()
 
-    suspend fun loadToday() {
+    suspend fun loadNotifications(reset: Boolean) {
+        if (loadingMore) return
+        if (reset) {
+            loading = true
+            notifications = emptyList()
+        } else {
+            loadingMore = true
+        }
+        
+        val targetPage = if (reset) 1 else page + 1
         val (status, type, source) = params()
-        repository.getNotificationsPage(status, type, source, "today", 1, 50)
-            .onSuccess { today = it.items }
-    }
-
-    suspend fun loadOlder(reset: Boolean) {
-        if (loadingOlder) return
-        loadingOlder = true
-        val next = if (reset) 1 else olderPage + 1
-        val (status, type, source) = params()
-        repository.getNotificationsPage(status, type, source, "older", next, 20)
-            .onSuccess { page ->
-                older = if (reset) page.items else older + page.items.filter { item -> older.none { it.id == item.id } }
-                olderPage = page.page
-                olderHasMore = page.hasMore
+        
+        repository.getNotificationsPage(status, type, source, period = null, page = targetPage, perPage = 25)
+            .onSuccess { result ->
+                if (reset) {
+                    notifications = result.items
+                } else {
+                    notifications = notifications + result.items.filter { item -> notifications.none { it.id == item.id } }
+                }
+                page = result.page
+                hasMore = result.hasMore
             }
-        loadingOlder = false
-    }
-
-    suspend fun reload() {
-        loading = true
-        today = emptyList()
-        older = emptyList()
-        olderPage = 1
-        olderHasMore = false
-        loadToday()
-        loadOlder(reset = true)
+        
         loading = false
+        loadingMore = false
     }
 
     suspend fun loadSent() {
@@ -188,49 +141,48 @@ fun NotificationCenterContent(onBack: () -> Unit) {
         loadingSent = false
     }
 
-    LaunchedEffect(filter) { if (tab == CenterTab.Inbox) reload() }
+    LaunchedEffect(filter) { if (tab == CenterTab.Inbox) loadNotifications(reset = true) }
     LaunchedEffect(tab) {
         if (tab == CenterTab.Sent) loadSent()
-        else reload()
+        else loadNotifications(reset = true)
     }
 
     val shouldLoadMore by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val total = listState.layoutInfo.totalItemsCount
-            olderHasMore && !loadingOlder && total > 0 && last >= total - 3
+            hasMore && !loadingMore && total > 0 && last >= total - 3
         }
     }
-    LaunchedEffect(shouldLoadMore, filter) {
-        if (shouldLoadMore) loadOlder(reset = false)
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore && tab == CenterTab.Inbox) loadNotifications(reset = false)
     }
 
-    val combined = remember(today, older, query) {
-        val all = today + older.filter { item -> today.none { it.id == item.id } }
+    val filtered = remember(notifications, query) {
         val q = query.trim()
-        if (q.isBlank()) all
-        else all.filter { item ->
+        if (q.isBlank()) notifications
+        else notifications.filter { item ->
             listOf(item.title, item.message, item.description, item.optional_description, item.source)
                 .any { it.orEmpty().contains(q, ignoreCase = true) }
         }
     }
+    
     val todayKey = DateUtils.today()
     val yesterdayKey = DateUtils.shiftDate(todayKey, -1)
-    val todayItems = combined.filter { notificationDay(it) == todayKey }
-    val yesterdayItems = combined.filter { notificationDay(it) == yesterdayKey }
-    val earlierItems = combined.filter {
+    val todayItems = filtered.filter { notificationDay(it) == todayKey }
+    val yesterdayItems = filtered.filter { notificationDay(it) == yesterdayKey }
+    val earlierItems = filtered.filter {
         val day = notificationDay(it)
         day != todayKey && day != yesterdayKey
     }
-    val unreadCount = combined.count { !it.isRead }
+    val unreadCount = filtered.count { !it.isRead }
 
     fun openItem(item: Notification) {
         opened = item
         if (!item.isRead) {
             scope.launch {
                 repository.markAsRead(item.id)
-                today = today.map { if (it.id == item.id) it.copy(is_read = true, read_at = "now") else it }
-                older = older.map { if (it.id == item.id) it.copy(is_read = true, read_at = "now") else it }
+                notifications = notifications.map { if (it.id == item.id) it.copy(is_read = true, read_at = "now") else it }
             }
         }
     }
@@ -251,8 +203,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                         IconButton(onClick = {
                             scope.launch {
                                 repository.markAllAsRead().onSuccess {
-                                    today = today.map { it.copy(is_read = true, read_at = "now") }
-                                    older = older.map { it.copy(is_read = true, read_at = "now") }
+                                    notifications = notifications.map { it.copy(is_read = true, read_at = "now") }
                                 }
                             }
                         }) {
@@ -261,7 +212,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                     }
                     IconButton(onClick = {
                         scope.launch {
-                            if (tab == CenterTab.Sent) loadSent() else reload()
+                            if (tab == CenterTab.Sent) loadSent() else loadNotifications(reset = true)
                         }
                     }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = Color.White)
@@ -312,7 +263,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         StatPill("$unreadCount unread", PrimaryBlue)
                         StatPill("${todayItems.size} today", SuccessColor)
-                        StatPill("${combined.size} loaded", SecondaryText)
+                        StatPill("${filtered.size} total", SecondaryText)
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -354,7 +305,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                 }
             } else when {
                 loading -> AppLoaderFullscreen(message = "Loading notification center")
-                combined.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                filtered.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.NotificationsOff, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(40.dp))
                         Spacer(modifier = Modifier.height(8.dp))
@@ -385,7 +336,7 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                             CenterAlertRow(item, onClick = { openItem(item) })
                         }
                     }
-                    if (loadingOlder) {
+                    if (loadingMore) {
                         item {
                             Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.Center) {
                                 AppLoaderCompact(size = 24.dp)
@@ -397,7 +348,16 @@ fun NotificationCenterContent(onBack: () -> Unit) {
         }
     }
 
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(
+        item = opened,
+        onDismiss = { opened = null },
+        onMarkRead = { id ->
+            scope.launch {
+                repository.markAsRead(id)
+                notifications = notifications.map { if (it.id == id) it.copy(is_read = true, read_at = "now") else it }
+            }
+        }
+    )
 }
 
 @Composable

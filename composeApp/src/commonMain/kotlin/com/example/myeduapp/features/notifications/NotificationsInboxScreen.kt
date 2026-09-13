@@ -60,6 +60,7 @@ import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
+import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Notification
 import com.example.myeduapp.data.repository.CommunicationRepository
 import kotlinx.coroutines.launch
@@ -203,7 +204,19 @@ private fun CompactNotificationsList(
             }
         }
     )
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(
+        item = opened,
+        onDismiss = { opened = null },
+        onMarkRead = { id ->
+            scope.launch {
+                repository.markAsRead(id)
+                notifications = notifications.map {
+                    if (it.id == id) it.copy(is_read = true, read_at = "now") else it
+                }
+                onUnreadCount(notifications.count { !it.isRead })
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -214,73 +227,67 @@ private fun PagedNotificationsFeed(
 ) {
     val repository = remember { CommunicationRepository() }
     var filter by remember { mutableStateOf(NotificationFilter.All) }
-    var today by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var older by remember { mutableStateOf<List<Notification>>(emptyList()) }
-    var olderPage by remember { mutableStateOf(1) }
-    var olderHasMore by remember { mutableStateOf(false) }
-    var loadingToday by remember { mutableStateOf(true) }
-    var loadingOlder by remember { mutableStateOf(false) }
+    
+    var notifications by remember { mutableStateOf<List<Notification>>(emptyList()) }
+    var page by remember { mutableStateOf(1) }
+    var hasMore by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    var loadingMore by remember { mutableStateOf(false) }
+    
     var opened by remember { mutableStateOf<Notification?>(null) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
-    val allItems = today + older
-    val unreadCount = allItems.count { !it.isRead }
+    val unreadCount = notifications.count { !it.isRead }
 
     fun filterParams(): Triple<String, String?, String?> = filter.toParams()
 
-    suspend fun loadToday() {
-        val (status, type, source) = filterParams()
-        repository.getNotificationsPage(
-            status = status,
-            type = type,
-            source = source,
-            period = "today",
-            page = 1,
-            perPage = 50
-        ).onSuccess { today = it.items }
-    }
-
-    suspend fun loadOlder(reset: Boolean) {
-        if (loadingOlder) return
-        loadingOlder = true
-        val nextPage = if (reset) 1 else olderPage + 1
-        val (status, type, source) = filterParams()
-        repository.getNotificationsPage(
-            status = status,
-            type = type,
-            source = source,
-            period = "older",
-            page = nextPage,
-            perPage = 20
-        ).onSuccess { page ->
-            older = if (reset) page.items else older + page.items.filter { item -> older.none { it.id == item.id } }
-            olderPage = page.page
-            olderHasMore = page.hasMore
+    suspend fun loadNotifications(reset: Boolean) {
+        if (loadingMore) return
+        if (reset) {
+            isLoading = true
+            notifications = emptyList()
+        } else {
+            loadingMore = true
         }
-        loadingOlder = false
+        
+        val (status, type, source) = filterParams()
+        val targetPage = if (reset) 1 else page + 1
+        
+        repository.getNotificationsPage(
+            status = status,
+            type = type,
+            source = source,
+            period = null, // Fetch all periods
+            page = targetPage,
+            perPage = 25
+        ).onSuccess { result ->
+            if (reset) {
+                notifications = result.items
+            } else {
+                notifications = notifications + result.items.filter { item -> notifications.none { it.id == item.id } }
+            }
+            page = result.page
+            hasMore = result.hasMore
+        }
+        
+        isLoading = false
+        loadingMore = false
+        onUnreadCount(notifications.count { !it.isRead })
     }
 
     LaunchedEffect(filter) {
-        loadingToday = true
-        today = emptyList()
-        older = emptyList()
-        olderPage = 1
-        olderHasMore = false
-        loadToday()
-        loadOlder(reset = true)
-        loadingToday = false
-        onUnreadCount((today + older).count { !it.isRead })
+        loadNotifications(reset = true)
     }
 
     val shouldLoadMore by remember {
         derivedStateOf {
             val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val total = listState.layoutInfo.totalItemsCount
-            olderHasMore && !loadingOlder && total > 0 && last >= total - 3
+            hasMore && !loadingMore && total > 0 && last >= total - 3
         }
     }
-    LaunchedEffect(shouldLoadMore, filter) {
-        if (shouldLoadMore) loadOlder(reset = false)
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) loadNotifications(reset = false)
     }
 
     fun markOpened(notification: Notification) {
@@ -288,11 +295,19 @@ private fun PagedNotificationsFeed(
         if (!notification.isRead) {
             scope.launch {
                 repository.markAsRead(notification.id)
-                today = today.map { if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it }
-                older = older.map { if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it }
-                onUnreadCount((today + older).count { !it.isRead })
+                notifications = notifications.map { if (it.id == notification.id) it.copy(is_read = true, read_at = "now") else it }
+                onUnreadCount(notifications.count { !it.isRead })
             }
         }
+    }
+
+    val todayKey = DateUtils.today()
+    val yesterdayKey = DateUtils.shiftDate(todayKey, -1)
+    val todayItems = notifications.filter { notificationDay(it) == todayKey }
+    val yesterdayItems = notifications.filter { notificationDay(it) == yesterdayKey }
+    val earlierItems = notifications.filter {
+        val day = notificationDay(it)
+        day != todayKey && day != yesterdayKey
     }
 
     Column(modifier = modifier) {
@@ -311,8 +326,7 @@ private fun PagedNotificationsFeed(
                 TextButton(onClick = {
                     scope.launch {
                         repository.markAllAsRead().onSuccess {
-                            today = today.map { it.copy(is_read = true, read_at = "now") }
-                            older = older.map { it.copy(is_read = true, read_at = "now") }
+                            notifications = notifications.map { it.copy(is_read = true, read_at = "now") }
                             onUnreadCount(0)
                         }
                     }
@@ -341,8 +355,8 @@ private fun PagedNotificationsFeed(
         }
 
         when {
-            loadingToday -> AppLoaderFullscreen(message = "Loading notifications")
-            today.isEmpty() && older.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            isLoading -> AppLoaderFullscreen(message = "Loading notifications")
+            notifications.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No notifications for this filter", color = SecondaryText)
             }
             else -> LazyColumn(
@@ -351,32 +365,28 @@ private fun PagedNotificationsFeed(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item {
-                    SectionLabel("Today")
-                }
-                if (today.isEmpty()) {
-                    item {
-                        Text("Nothing new today", fontSize = 13.sp, color = SecondaryText, modifier = Modifier.padding(bottom = 8.dp))
-                    }
-                } else {
-                    items(today, key = { "today-${it.id}" }) { notification ->
+                if (todayItems.isNotEmpty()) {
+                    item { SectionLabel("Today") }
+                    items(todayItems, key = { "today-${it.id}" }) { notification ->
                         NotificationCard(notification, onClick = { markOpened(notification) })
                     }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SectionLabel("Earlier")
-                }
-                if (older.isEmpty() && !loadingOlder) {
-                    item {
-                        Text("No earlier notifications", fontSize = 13.sp, color = SecondaryText)
-                    }
-                } else {
-                    items(older, key = { "older-${it.id}" }) { notification ->
+                
+                if (yesterdayItems.isNotEmpty()) {
+                    item { SectionLabel("Yesterday") }
+                    items(yesterdayItems, key = { "yesterday-${it.id}" }) { notification ->
                         NotificationCard(notification, onClick = { markOpened(notification) })
                     }
                 }
-                if (loadingOlder) {
+
+                if (earlierItems.isNotEmpty()) {
+                    item { SectionLabel("Earlier") }
+                    items(earlierItems, key = { "older-${it.id}" }) { notification ->
+                        NotificationCard(notification, onClick = { markOpened(notification) })
+                    }
+                }
+                
+                if (loadingMore) {
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -390,8 +400,24 @@ private fun PagedNotificationsFeed(
         }
     }
 
-    NotificationDetailDialog(opened) { opened = null }
+    NotificationDetailDialog(
+        item = opened,
+        onDismiss = { opened = null },
+        onMarkRead = { id ->
+            scope.launch {
+                repository.markAsRead(id)
+                notifications = notifications.map { if (it.id == id) it.copy(is_read = true, read_at = "now") else it }
+                onUnreadCount(notifications.count { !it.isRead })
+            }
+        }
+    )
 }
+
+private fun notificationDay(item: Notification): String {
+    val raw = item.displayDate.trim()
+    return if (raw.length >= 10) raw.take(10) else raw
+}
+
 
 @Composable
 private fun SectionLabel(text: String) {

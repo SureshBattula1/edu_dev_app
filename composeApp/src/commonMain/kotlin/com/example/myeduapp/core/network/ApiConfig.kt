@@ -30,6 +30,7 @@ object ApiConfig {
     const val ATTENDANCE_BULK = "attendance/bulk"
     const val STUDENTS = "students"
     const val TEACHERS = "teachers"
+    const val BRANCHES = "branches"
     const val BRANCHES_ACCESSIBLE = "branches/accessible"
     const val CLASSES = "classes"
     const val CLASS_GRADES = "classes/grades"

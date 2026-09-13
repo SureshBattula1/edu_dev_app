@@ -43,4 +43,18 @@ class TeacherRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getTeacherDetail(teacherId: String): Result<Teacher> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getTeacherDetail(token, teacherId)
+            if (response.success && response.data != null) {
+                Result.success(response.data)
+            } else {
+                Result.failure(Exception(response.message ?: "Failed to load teacher detail"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

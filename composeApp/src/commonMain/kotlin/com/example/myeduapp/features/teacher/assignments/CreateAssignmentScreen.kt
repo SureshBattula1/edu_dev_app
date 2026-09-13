@@ -15,9 +15,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryBlue
 import com.example.myeduapp.core.util.DateUtils
+import com.example.myeduapp.core.util.MediaUrlResolver
 import com.example.myeduapp.data.model.AssignmentAttachment
 import com.example.myeduapp.data.model.CreateAssignmentBody
 import com.example.myeduapp.data.model.EligibleStudent
@@ -70,6 +72,7 @@ import com.example.myeduapp.data.model.UpdateAssignmentBody
 import com.example.myeduapp.data.repository.AssignmentRepository
 import com.example.myeduapp.features.attendance.AttendanceDatePicker
 import com.example.myeduapp.features.attendance.rememberAttendanceClassSectionFilters
+import com.example.myeduapp.features.notifications.FilePreviewScreen
 import kotlinx.coroutines.launch
 
 class CreateAssignmentScreen(private val assignmentId: String? = null) : Screen {
@@ -91,6 +94,7 @@ fun CreateAssignmentContent(
     onBack: () -> Unit,
     onSaved: () -> Unit
 ) {
+    val navigator = LocalNavigator.currentOrThrow
     val isEdit = !assignmentId.isNullOrBlank()
     val repository = remember { AssignmentRepository() }
     val filters = rememberAttendanceClassSectionFilters()
@@ -132,7 +136,7 @@ fun CreateAssignmentContent(
             uploading = true
             files.forEach { file ->
                 repository.uploadAttachment(file)
-                    .onSuccess { attachments = attachments + it }
+                    .onSuccess { attachments += it }
                     .onFailure { snackbar.showSnackbar(it.message ?: "Could not upload ${file.name}") }
             }
             uploading = false
@@ -352,10 +356,17 @@ fun CreateAssignmentContent(
                         } else {
                             attachments.forEach { file ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 2.dp)
+                                        .clickable {
+                                            MediaUrlResolver.resolve(file.file_url ?: file.file_path)?.let { url ->
+                                                navigator.push(FilePreviewScreen("Preview", url, file.displayName))
+                                            }
+                                        },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.InsertDriveFile, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                     Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
                                         Text(file.displayName, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                                         file.file_size?.let { size ->
@@ -457,7 +468,7 @@ fun CreateAssignmentContent(
                     val subjectId = selectedSubjectId ?: return@AppButton
                     submitting = true
                     scope.launch {
-                        val result = if (isEdit && assignmentId != null) {
+                        val result = if (isEdit) {
                             repository.updateAssignment(
                                 assignmentId,
                                 UpdateAssignmentBody(
@@ -548,13 +559,13 @@ private fun AudienceTab(label: String, selected: Boolean, modifier: Modifier, on
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) PrimaryBlue else androidx.compose.ui.graphics.Color.Transparent
+        color = if (selected) PrimaryBlue else Color.Transparent
     ) {
         Text(
             label,
             modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
             textAlign = TextAlign.Center,
-            color = if (selected) androidx.compose.ui.graphics.Color.White else PrimaryBlue,
+            color = if (selected) Color.White else PrimaryBlue,
             fontWeight = FontWeight.SemiBold,
             fontSize = 13.sp
         )

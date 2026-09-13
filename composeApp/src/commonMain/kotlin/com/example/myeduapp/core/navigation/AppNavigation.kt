@@ -62,6 +62,27 @@ object AppNavigation {
         items.add(NavItem("Dashboard", Icons.Default.Dashboard, Route.Dashboard))
         
         when (role) {
+            UserRole.SUPER_ADMIN -> {
+                items.add(NavItem("Branches", Icons.Default.Business, Route.Branches))
+                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
+                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
+                items.add(NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance))
+                items.add(NavItem("Assignments", Icons.Default.Assignment, Route.Assignments))
+                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
+                items.add(NavItem("Timetable", Icons.Default.Schedule, Route.Timetable))
+            }
+            UserRole.BRANCH_ADMIN -> {
+                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
+                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
+                items.add(NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance))
+                items.add(NavItem("Assignments", Icons.Default.Assignment, Route.Assignments))
+                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
+                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
+                items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
+                items.add(NavItem("Timetable", Icons.Default.Schedule, Route.Timetable))
+            }
             UserRole.TEACHER -> {
                 items.add(NavItem("My Students", Icons.Default.Group, Route.MyStudents))
                 items.add(NavItem("Attendance", Icons.Default.CheckCircle, Route.Attendance))
@@ -80,16 +101,6 @@ object AppNavigation {
             }
             UserRole.STAFF -> {
                 items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
-            }
-            UserRole.BRANCH_ADMIN, UserRole.SUPER_ADMIN -> {
-                items.add(NavItem("Students", Icons.Default.Group, Route.MyStudents))
-                items.add(NavItem("Teachers", Icons.Default.School, Route.Teachers))
-                items.add(NavItem("Attendance", Icons.Default.CalendarToday, Route.Attendance))
-                items.add(NavItem("Assignments", Icons.Default.Assignment, Route.Assignments))
-                items.add(NavItem("Leaves", Icons.Default.EventNote, Route.Leaves))
-                items.add(NavItem("Fees", Icons.Default.Payments, Route.Fees))
-                items.add(NavItem("Exams", Icons.Default.Quiz, Route.Exams))
-                items.add(NavItem("Timetable", Icons.Default.Schedule, Route.Timetable))
             }
             else -> {
                 items.add(NavItem("Students", Icons.Default.Group, Route.Dashboard))

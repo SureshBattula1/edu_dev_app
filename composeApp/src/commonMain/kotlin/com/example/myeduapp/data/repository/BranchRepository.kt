@@ -2,6 +2,7 @@ package com.example.myeduapp.data.repository
 
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.network.BranchApi
+import com.example.myeduapp.data.model.Branch
 import com.example.myeduapp.data.model.BranchOption
 import com.example.myeduapp.data.model.FilterOption
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,37 @@ class BranchRepository {
                 return@withContext Result.failure(Exception("Failed to load branches"))
             }
             Result.success(response.data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllBranches(): Result<List<Branch>> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getAllBranches(token)
+            if (!response.success) {
+                return@withContext Result.failure(Exception("Failed to load all branches"))
+            }
+            // Debug logging
+            response.data.forEach { branch ->
+                println("Branch Debug: ${branch.name} ID=${branch.id} Students=${branch.studentsCount} Teachers=${branch.teachersCount}")
+            }
+            Result.success(response.data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getBranchDetails(branchId: String): Result<Branch> = withContext(Dispatchers.IO) {
+        try {
+            val token = SessionManager.token ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val response = api.getBranchDetails(token, branchId)
+            val data = response.data
+            if (!response.success || data == null) {
+                return@withContext Result.failure(Exception(response.message ?: "Failed to load branch details"))
+            }
+            Result.success(data)
         } catch (e: Exception) {
             Result.failure(e)
         }

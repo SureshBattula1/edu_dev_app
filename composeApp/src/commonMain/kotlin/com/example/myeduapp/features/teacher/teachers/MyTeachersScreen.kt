@@ -1,39 +1,20 @@
-package com.example.myeduapp.features.teacher.teachers
+ package com.example.myeduapp.features.teacher.teachers
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,11 +22,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.SessionManager
-import com.example.myeduapp.core.ui.components.AppBackTopBar
-import com.example.myeduapp.core.ui.components.AppCard
-import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
-import com.example.myeduapp.core.ui.components.ClearFiltersButton
-import com.example.myeduapp.core.ui.components.FilterOptionDropdown
+import com.example.myeduapp.core.ui.components.*
+import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.FilterOption
@@ -57,11 +35,6 @@ import com.example.myeduapp.data.repository.ClassRepository
 import com.example.myeduapp.data.repository.TeacherRepository
 import kotlinx.coroutines.delay
 
-/**
- * Teachers list mirrors Students filters by role:
- * - SuperAdmin: Branch
- * - BranchAdmin: Class + Section (class-teacher assignment)
- */
 class MyTeachersScreen : Screen {
     @Composable
     override fun Content() {
@@ -69,15 +42,16 @@ class MyTeachersScreen : Screen {
         val repository = remember { TeacherRepository() }
         val branchRepository = remember { BranchRepository() }
         val classRepository = remember { ClassRepository() }
+        val academicYearFilter = rememberAcademicYearFilter()
         val role = SessionManager.user?.userRole
         val showBranchFilter = role == UserRole.SUPER_ADMIN
-        val showClassSectionFilters = role == UserRole.BRANCH_ADMIN
 
         var teachers by remember { mutableStateOf<List<Teacher>>(emptyList()) }
         var branchOptions by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
         var grades by remember { mutableStateOf<List<GradeOption>>(emptyList()) }
         var sections by remember { mutableStateOf<List<FilterOption>>(emptyList()) }
         var isLoading by remember { mutableStateOf(false) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
         var searchQuery by remember { mutableStateOf("") }
         var selectedBranchId by remember { mutableStateOf<String?>(null) }
         var selectedGrade by remember { mutableStateOf<String?>(null) }
@@ -86,6 +60,7 @@ class MyTeachersScreen : Screen {
         val gradeOptions = remember(grades) {
             grades.map { FilterOption(value = it.value, label = it.label) }
         }
+        val effectiveBranchId = if (showBranchFilter) selectedBranchId?.toIntOrNull() else SessionManager.user?.branch_id
 
         LaunchedEffect(showBranchFilter) {
             if (showBranchFilter) {
@@ -93,29 +68,42 @@ class MyTeachersScreen : Screen {
             }
         }
 
-        LaunchedEffect(showClassSectionFilters) {
-            if (showClassSectionFilters) {
-                classRepository.getGrades().onSuccess { grades = it }
-            }
+        LaunchedEffect(effectiveBranchId) {
+            classRepository.getGrades(branchId = effectiveBranchId)
+                .onSuccess { grades = it }
+            selectedGrade = null
+            selectedSection = null
         }
 
-        LaunchedEffect(selectedGrade, showClassSectionFilters) {
-            if (!showClassSectionFilters) return@LaunchedEffect
-            classRepository.getSections(selectedGrade).onSuccess { sections = it }
+        LaunchedEffect(selectedGrade, effectiveBranchId) {
+            classRepository.getSections(grade = selectedGrade, branchId = effectiveBranchId)
+                .onSuccess { sections = it }
             if (selectedGrade == null) selectedSection = null
         }
 
-        LaunchedEffect(searchQuery, selectedBranchId, selectedGrade, selectedSection) {
+        LaunchedEffect(
+            searchQuery,
+            effectiveBranchId,
+            selectedGrade,
+            selectedSection
+        ) {
             if (searchQuery.length >= 2 || searchQuery.isEmpty()) {
                 isLoading = true
+                errorMessage = null
                 teachers = emptyList()
                 if (searchQuery.isNotEmpty()) delay(500)
+                
                 repository.getTeachers(
                     query = searchQuery.ifBlank { null },
-                    branchId = if (showBranchFilter) selectedBranchId?.toIntOrNull() else null,
-                    grade = if (showClassSectionFilters) selectedGrade else null,
-                    section = if (showClassSectionFilters) selectedSection else null
-                ).onSuccess { teachers = it }
+                    branchId = effectiveBranchId,
+                    grade = selectedGrade,
+                    section = selectedSection
+                ).onSuccess {
+                    teachers = it
+                    errorMessage = null
+                }.onFailure {
+                    errorMessage = it.message ?: "Failed to load teachers"
+                }
                 isLoading = false
             }
         }
@@ -132,7 +120,7 @@ class MyTeachersScreen : Screen {
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Search by name, employee id...") },
+                    placeholder = { Text("Search teachers...") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -144,6 +132,23 @@ class MyTeachersScreen : Screen {
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterOptionDropdown(
+                        label = "Academic Year",
+                        options = academicYearFilter.options,
+                        selectedValue = academicYearFilter.selectedYearId,
+                        onOptionSelected = { yearId ->
+                            yearId?.let { academicYearFilter.onYearSelected(it) }
+                        },
+                        allowAll = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
                 if (showBranchFilter) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
@@ -154,56 +159,62 @@ class MyTeachersScreen : Screen {
                             label = "Branch",
                             options = branchOptions,
                             selectedValue = selectedBranchId,
-                            onOptionSelected = { selectedBranchId = it },
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (hasActiveFilters) {
-                            ClearFiltersButton(onClear = { selectedBranchId = null })
-                        }
-                    }
-                }
-
-                if (showClassSectionFilters) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilterOptionDropdown(
-                            label = "Class",
-                            options = gradeOptions,
-                            selectedValue = selectedGrade,
                             onOptionSelected = {
-                                selectedGrade = it
+                                selectedBranchId = it
+                                selectedGrade = null
                                 selectedSection = null
                             },
                             modifier = Modifier.weight(1f)
                         )
-                        FilterOptionDropdown(
-                            label = "Section",
-                            options = sections,
-                            selectedValue = selectedSection,
-                            onOptionSelected = { selectedSection = it },
-                            modifier = Modifier.weight(1f)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterOptionDropdown(
+                        label = "Class",
+                        options = gradeOptions,
+                        selectedValue = selectedGrade,
+                        onOptionSelected = {
+                            selectedGrade = it
+                            selectedSection = null
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterOptionDropdown(
+                        label = "Section",
+                        options = sections,
+                        selectedValue = selectedSection,
+                        onOptionSelected = { selectedSection = it },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (hasActiveFilters) {
+                        ClearFiltersButton(
+                            onClear = {
+                                selectedBranchId = null
+                                selectedGrade = null
+                                selectedSection = null
+                            }
                         )
-                        if (hasActiveFilters) {
-                            ClearFiltersButton(
-                                onClear = {
-                                    selectedGrade = null
-                                    selectedSection = null
-                                }
-                            )
-                        }
                     }
                 }
 
                 if (isLoading) {
-                    AppLoaderFullscreen(message = "Loading teachers")
+                    AppLoaderFullscreen(message = "Loading teachers...")
+                } else if (errorMessage != null) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(errorMessage!!, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 } else if (teachers.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
                             if (searchQuery.isNotEmpty() || hasActiveFilters)
-                                "No teachers found with current filters"
+                                "No teachers found"
                             else "No teachers available",
                             color = SecondaryText
                         )
@@ -214,8 +225,11 @@ class MyTeachersScreen : Screen {
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(teachers) { teacher ->
-                            TeacherCard(teacher)
+                        items(teachers, key = { it.id }) { teacher ->
+                            TeacherCard(
+                                teacher = teacher,
+                                onClick = { navigator.push(TeacherProfileScreen(teacher)) }
+                            )
                         }
                     }
                 }
@@ -225,8 +239,14 @@ class MyTeachersScreen : Screen {
 }
 
 @Composable
-private fun TeacherCard(teacher: Teacher) {
-    AppCard(modifier = Modifier.fillMaxWidth()) {
+private fun TeacherCard(
+    teacher: Teacher,
+    onClick: () -> Unit
+) {
+    AppCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -271,13 +291,15 @@ private fun TeacherCard(teacher: Teacher) {
                     if (classTeacher.isNotBlank()) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = classTeacher,
+                            text = "Class: $classTeacher",
                             fontSize = 11.sp,
                             color = SecondaryText.copy(alpha = 0.7f)
                         )
                     }
                 }
             }
+
+            Icon(Icons.Default.ChevronRight, contentDescription = "View Details", tint = Color.LightGray)
         }
     }
 }

@@ -7,16 +7,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -56,6 +56,8 @@ import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
+import com.example.myeduapp.core.util.DateUtils
+import com.example.myeduapp.core.util.MediaUrlResolver
 import com.example.myeduapp.data.model.AssignmentAttachment
 import com.example.myeduapp.data.model.BroadcastNotificationBody
 import com.example.myeduapp.data.model.BroadcastNotificationResult
@@ -85,6 +87,7 @@ private fun ComposeTeacherNotificationContent(
     onBack: () -> Unit,
     onViewSent: () -> Unit
 ) {
+    val navigator = LocalNavigator.currentOrThrow
     val communicationRepo = remember { CommunicationRepository() }
     val assignmentRepo = remember { AssignmentRepository() }
     val filters = rememberAttendanceClassSectionFilters()
@@ -118,7 +121,7 @@ private fun ComposeTeacherNotificationContent(
             uploading = true
             files.forEach { file ->
                 communicationRepo.uploadAttachment(file)
-                    .onSuccess { attachments = attachments + it }
+                    .onSuccess { attachments += it }
                     .onFailure { snackbar.showSnackbar(it.message ?: "Could not upload ${file.name}") }
             }
             uploading = false
@@ -296,8 +299,17 @@ private fun ComposeTeacherNotificationContent(
                             Text(if (uploading) "Uploading…" else "Add files")
                         }
                         attachments.forEach { file ->
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                Icon(Icons.Default.InsertDriveFile, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        MediaUrlResolver.resolve(file.file_url ?: file.file_path)?.let { url ->
+                                            navigator.push(FilePreviewScreen("Preview", url, file.displayName))
+                                        }
+                                    },
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                 Text(
                                     file.displayName,
                                     modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
@@ -359,8 +371,8 @@ private fun ComposeTeacherNotificationContent(
         val whenLabel = result.sent_at?.let { raw ->
             val day = if (raw.length >= 10) raw.take(10) else raw
             val time = if (raw.length >= 16) raw.substring(11, 16) else ""
-            val dayPart = if (day == com.example.myeduapp.core.util.DateUtils.today()) "Today" else day
-            listOf(dayPart, time).filter { it.isNotBlank() }.joinToString(" ")
+            val dayPart = if (day == DateUtils.today()) "Today" else day
+            sequenceOf(dayPart, time).filter { it.isNotBlank() }.joinToString(" ")
         } ?: "Today"
         AlertDialog(
             onDismissRequest = { },
@@ -387,13 +399,13 @@ private fun AudienceTab(label: String, selected: Boolean, modifier: Modifier, on
     Surface(
         modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = if (selected) PrimaryBlue else androidx.compose.ui.graphics.Color.Transparent
+        color = if (selected) PrimaryBlue else Color.Transparent
     ) {
         Text(
             label,
             modifier = Modifier.padding(vertical = 8.dp).fillMaxWidth(),
             textAlign = TextAlign.Center,
-            color = if (selected) androidx.compose.ui.graphics.Color.White else PrimaryBlue,
+            color = if (selected) Color.White else PrimaryBlue,
             fontWeight = FontWeight.SemiBold,
             fontSize = 13.sp
         )
