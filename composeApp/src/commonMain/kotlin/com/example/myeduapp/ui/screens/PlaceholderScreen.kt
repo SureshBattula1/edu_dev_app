@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
 
 class PlaceholderScreen(private val title: String) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -37,22 +39,16 @@ class PlaceholderScreen(private val title: String) : Screen {
                 )
             }
         ) { padding ->
+            val icon3D = BigBridzIconRegistry.forRoute(title)
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Coming Soon...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                BigBridzEmptyState(
+                    icon = icon3D,
+                    title = title,
+                    message = "This module is currently under active development and will be available soon."
+                )
             }
         }
     }

@@ -1,0 +1,85 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+
+    <!-- Ambient Shadow -->
+    <path
+        android:pathData="M24,104 C40,118 88,118 104,104 C116,92 112,80 96,80 C80,80 48,80 32,80 C16,80 12,92 24,104 Z"
+        android:fillColor="#1F1A3A5C" />
+
+    <!-- 3D Base Platform -->
+    <path
+        android:pathData="M16,76 L64,104 L112,76 L64,48 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="16" android:startY="48"
+                android:endX="112" android:endY="104"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF3B82F6"/>
+                <item android:offset="1.0" android:color="#FF1D4ED8"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M16,76 L64,104 L64,112 L16,84 Z"
+        android:fillColor="#FF1E40AF" />
+    <path
+        android:pathData="M64,104 L112,76 L112,84 L64,112 Z"
+        android:fillColor="#FF1D4ED8" />
+
+    <!-- 3D Bar 1 (Left - Cyan) -->
+    <path
+        android:pathData="M32,56 L44,50 L56,56 L44,62 Z"
+        android:fillColor="#FF38BDF8"/>
+    <path
+        android:pathData="M32,56 L44,62 L44,82 L32,76 Z"
+        android:fillColor="#FF0284C7"/>
+    <path
+        android:pathData="M44,62 L56,56 L56,76 L44,82 Z"
+        android:fillColor="#FF0369A1"/>
+
+    <!-- 3D Bar 2 (Center - High Gold/Yellow) -->
+    <path
+        android:pathData="M56,36 L68,30 L80,36 L68,42 Z"
+        android:fillColor="#FFFACC15"/>
+    <path
+        android:pathData="M56,36 L68,42 L68,88 L56,82 Z"
+        android:fillColor="#FFEAB308"/>
+    <path
+        android:pathData="M68,42 L80,36 L80,82 L68,88 Z"
+        android:fillColor="#FFCA8A04"/>
+
+    <!-- 3D Bar 3 (Right - Emerald) -->
+    <path
+        android:pathData="M80,48 L92,42 L104,48 L92,54 Z"
+        android:fillColor="#FF34D399"/>
+    <path
+        android:pathData="M80,48 L92,54 L92,78 L80,72 Z"
+        android:fillColor="#FF059669"/>
+    <path
+        android:pathData="M92,54 L104,48 L104,72 L92,78 Z"
+        android:fillColor="#FF047857"/>
+
+    <!-- Floating Metric Sphere -->
+    <path
+        android:pathData="M78,24 A12,12 0 1,1 102,24 A12,12 0 1,1 78,24 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="78" android:startY="12"
+                android:endX="102" android:endY="36"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFF43F5E"/>
+                <item android:offset="1.0" android:color="#FFE11D48"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M86,22 L91,27 L97,20"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+</vector>

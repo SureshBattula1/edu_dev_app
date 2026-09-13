@@ -24,6 +24,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.*
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.FilterOption
@@ -211,14 +212,13 @@ class MyTeachersScreen : Screen {
                         }
                     }
                 } else if (teachers.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            if (searchQuery.isNotEmpty() || hasActiveFilters)
-                                "No teachers found"
-                            else "No teachers available",
-                            color = SecondaryText
-                        )
-                    }
+                    BigBridzEmptyState(
+                        icon = BigBridzIcon.Teachers,
+                        title = "No Teachers Found",
+                        message = if (searchQuery.isNotEmpty() || hasActiveFilters)
+                            "No teacher records match your active search or filters."
+                        else "No teacher records available."
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

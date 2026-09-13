@@ -31,6 +31,8 @@ import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.NavItem
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.AppCard
+import com.example.myeduapp.core.ui.components.BigBridzDashboardModuleCard
+import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -242,26 +244,11 @@ fun QuickActionsGrid(role: UserRole, onNavigate: (String) -> Unit) {
 
 @Composable
 fun ActionCard(item: NavItem, modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
-    val colorScheme = MaterialTheme.colorScheme
-    AppCard(
-        modifier = modifier.clickable { onNavigate(item.route.path) }
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(item.icon, contentDescription = item.label, tint = colorScheme.primary, modifier = Modifier.size(24.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(item.label, style = MaterialTheme.typography.bodySmall, color = colorScheme.onSurface, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center)
-        }
-    }
+    val icon3D = BigBridzIconRegistry.forRoute(item.route.path)
+    BigBridzDashboardModuleCard(
+        icon = icon3D,
+        title = item.label,
+        modifier = modifier,
+        onClick = { onNavigate(item.route.path) }
+    )
 }

@@ -25,9 +25,11 @@ import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoader
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
 import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.FilterOption
@@ -238,14 +240,13 @@ class MyStudentsScreen : Screen {
                 if (isLoading) {
                     AppLoaderFullscreen(message = "Loading students")
                 } else if (students.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            if (searchQuery.isNotEmpty() || hasActiveFilters)
-                                "No students found with current filters"
-                            else "No students available",
-                            color = SecondaryText
-                        )
-                    }
+                    BigBridzEmptyState(
+                        icon = BigBridzIcon.EmptyStudents,
+                        title = "No Students Found",
+                        message = if (searchQuery.isNotEmpty() || hasActiveFilters)
+                            "No student records match your active search or filters."
+                        else "No student records available."
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

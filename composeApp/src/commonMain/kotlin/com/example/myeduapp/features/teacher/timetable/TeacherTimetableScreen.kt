@@ -24,6 +24,8 @@ import com.example.myeduapp.data.repository.TimetableRepository
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 
@@ -100,9 +102,11 @@ fun TeacherTimetableScreenContent(onBack: (() -> Unit)? = null) {
                 val daySlots = slots.filter { it.day.equals(selectedDay, ignoreCase = true) }
                 
                 if (daySlots.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No classes scheduled for $selectedDay")
-                    }
+                    BigBridzEmptyState(
+                        icon = BigBridzIcon.Timetable,
+                        title = "No Classes Scheduled",
+                        message = "No timetable slots found for $selectedDay."
+                    )
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),

@@ -21,7 +21,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
 import com.example.myeduapp.core.ui.components.NetworkAvatar
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.*
 import com.example.myeduapp.data.model.Attendance
 import com.example.myeduapp.data.model.AttendanceOverview
@@ -248,25 +250,12 @@ fun Student360EmptyTab(
     message: String,
     modifier: Modifier = Modifier
 ) {
-    val colorScheme = MaterialTheme.colorScheme
-    Column(
+    BigBridzEmptyState(
+        icon = BigBridzIcon.Profile,
+        title = title,
+        message = message,
         modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Default.Info,
-            contentDescription = null,
-            tint = colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp)
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(title, fontWeight = FontWeight.Bold, fontSize = 17.sp, color = colorScheme.onSurface)
-        Spacer(Modifier.height(6.dp))
-        Text(message, color = colorScheme.onSurfaceVariant, fontSize = 14.sp)
-    }
+    )
 }
 
 @Composable

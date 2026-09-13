@@ -1,0 +1,64 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="128"
+    android:viewportHeight="128">
+
+    <!-- Ambient Shadow -->
+    <path
+        android:pathData="M24,110 C40,122 88,122 104,110 C116,98 112,86 96,86 C80,86 48,86 32,86 C16,86 12,98 24,110 Z"
+        android:fillColor="#1F0F172A" />
+
+    <!-- 3D Blackboard Stand & Screen -->
+    <path
+        android:pathData="M20,24 L108,24 C112,24 116,28 116,32 L116,80 C116,84 112,88 108,88 L20,88 C16,88 12,84 12,80 L12,32 C12,28 16,24 20,24 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="12" android:startY="24"
+                android:endX="116" android:endY="88"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FF065F46"/>
+                <item android:offset="1.0" android:color="#FF047857"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Wooden Bezel Frame -->
+    <path
+        android:pathData="M16,20 L112,20 C116,20 120,24 120,28 L120,84 C120,88 116,92 112,92 L16,92 C12,92 8,88 8,84 L8,28 C8,24 12,20 16,20 Z"
+        android:strokeColor="#FFB45309"
+        android:strokeWidth="5"
+        android:fillColor="#00000000"/>
+
+    <!-- Chalk Diagrams on Board -->
+    <path
+        android:pathData="M28,40 L48,40 M28,52 L68,52 M28,64 L56,64"
+        android:strokeColor="#E0FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"/>
+
+    <!-- 3D Apple Badge (Teacher Symbol) -->
+    <path
+        android:pathData="M84,60 C80,52 92,44 100,52 C108,44 120,52 116,60 C112,72 100,80 100,80 C100,80 88,72 84,60 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="84" android:startY="44"
+                android:endX="120" android:endY="80"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFEF4444"/>
+                <item android:offset="1.0" android:color="#FFB91C1C"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Apple Leaf -->
+    <path
+        android:pathData="M100,48 C104,40 108,42 108,42 C108,42 104,50 100,48 Z"
+        android:fillColor="#FF22C55E"/>
+
+    <!-- Pointer Stick -->
+    <path
+        android:pathData="M24,96 L80,56"
+        android:strokeColor="#FFFACC15"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"/>
+</vector>

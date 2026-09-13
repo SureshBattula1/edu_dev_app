@@ -24,8 +24,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.datastore.AuthState
 import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
 import com.example.myeduapp.core.ui.components.ClearFiltersButton
 import com.example.myeduapp.core.ui.components.FilterOptionDropdown
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.ErrorColor
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
@@ -362,9 +364,11 @@ private fun FeeSummaryStat(label: String, value: Double) {
 @Composable
 fun DuesList(dues: List<FeeDue>) {
     if (dues.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No pending dues found", color = SecondaryText)
-        }
+        BigBridzEmptyState(
+            icon = BigBridzIcon.Fees,
+            title = "No Pending Fees",
+            message = "All student fees are fully settled or no fee dues match your active filters."
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -381,9 +385,11 @@ fun DuesList(dues: List<FeeDue>) {
 @Composable
 fun PaymentsList(payments: List<FeePayment>) {
     if (payments.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No payment history found", color = SecondaryText)
-        }
+        BigBridzEmptyState(
+            icon = BigBridzIcon.Payments,
+            title = "No Payment History",
+            message = "No fee payment records match your active filters."
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

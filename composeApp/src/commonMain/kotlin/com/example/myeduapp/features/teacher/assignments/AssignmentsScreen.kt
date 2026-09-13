@@ -44,6 +44,8 @@ import com.example.myeduapp.core.datastore.SessionManager
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.Assignment
@@ -100,12 +102,11 @@ class AssignmentsScreen : Screen {
             if (isLoading) {
                 AppLoaderFullscreen(message = "Loading assignments")
             } else if (assignments.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(error ?: "No assignments found", color = SecondaryText)
-                }
+                BigBridzEmptyState(
+                    icon = BigBridzIcon.EmptyAssignments,
+                    title = "No Assignments Found",
+                    message = error ?: "No homework or class assignments have been created yet."
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),

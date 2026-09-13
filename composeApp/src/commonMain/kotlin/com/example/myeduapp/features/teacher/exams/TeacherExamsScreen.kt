@@ -21,6 +21,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.InfoColor
@@ -82,9 +84,11 @@ fun TeacherExamsScreenContent(onBack: (() -> Unit)? = null) {
         if (isLoading) {
             AppLoaderFullscreen(message = "Loading exams")
         } else if (exams.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No exams scheduled", color = SecondaryText)
-            }
+            BigBridzEmptyState(
+                icon = BigBridzIcon.EmptyExams,
+                title = "No Upcoming Exams",
+                message = "No exam schedules have been posted yet."
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),

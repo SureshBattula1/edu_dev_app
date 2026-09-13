@@ -28,8 +28,10 @@ import com.example.myeduapp.core.ui.components.AppStatCard
 import com.example.myeduapp.ui.components.AuthorizationWrapper
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.core.navigation.Route
+import com.example.myeduapp.core.ui.components.BigBridzDashboardModuleCard
 import com.example.myeduapp.data.model.UserRole
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
+import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,26 +234,12 @@ fun TeacherHeroHeader(
 
 @Composable
 fun QuickActionItem(label: String, icon: ImageVector, color: Color, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            onClick = onClick,
-            modifier = Modifier.size(64.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = color.copy(alpha = 0.1f),
-            border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(28.dp))
-            }
-        }
-        Text(
-            label, 
-            style = MaterialTheme.typography.bodySmall, 
-            color = MaterialTheme.colorScheme.onSurfaceVariant, 
-            modifier = Modifier.padding(top = 8.dp),
-            fontWeight = FontWeight.Medium
-        )
-    }
+    val icon3D = BigBridzIconRegistry.forRoute(label)
+    BigBridzDashboardModuleCard(
+        icon = icon3D,
+        title = label,
+        onClick = onClick
+    )
 }
 
 @Composable

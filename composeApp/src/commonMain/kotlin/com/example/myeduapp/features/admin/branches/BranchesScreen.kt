@@ -25,6 +25,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridz3DIconCard
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.components.BigBridzErrorState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.data.model.Branch
@@ -72,13 +76,20 @@ fun BranchesContent(
         if (isLoading) {
             AppLoaderFullscreen(message = "Loading branches...")
         } else if (error != null) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
-            }
+            BigBridzErrorState(
+                title = "Error Loading Branches",
+                message = error ?: "Unknown error occurred.",
+                onRetry = {
+                    isLoading = true
+                    // reload trigger
+                }
+            )
         } else if (branches.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No branches found", color = SecondaryText)
-            }
+            BigBridzEmptyState(
+                icon = BigBridzIcon.Branches,
+                title = "No Branches Found",
+                message = "No branch campus records are available."
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
@@ -103,15 +114,11 @@ fun BranchListItem(branch: Branch, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryBlue.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Business, contentDescription = null, tint = PrimaryBlue)
-            }
+            BigBridz3DIconCard(
+                icon = BigBridzIcon.Branches,
+                iconSize = 36.dp,
+                containerSize = 48.dp
+            )
             
             Spacer(modifier = Modifier.width(16.dp))
             

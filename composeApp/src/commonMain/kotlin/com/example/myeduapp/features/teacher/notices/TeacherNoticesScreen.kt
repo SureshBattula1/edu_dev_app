@@ -20,6 +20,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.example.myeduapp.data.model.Announcement
 import com.example.myeduapp.data.repository.CommunicationRepository
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.components.BigBridzErrorState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
 import com.example.myeduapp.core.ui.theme.SecondaryText
 
@@ -72,9 +75,19 @@ fun TeacherNoticesScreenContent(onBack: (() -> Unit)? = null) {
             if (isLoading) {
                 AppLoaderFullscreen(message = "Loading notices")
             } else if (error != null) {
-                Text("Error: $error", modifier = Modifier.align(Alignment.Center), color = MaterialTheme.colorScheme.error)
+                BigBridzErrorState(
+                    title = "Error Loading Notices",
+                    message = error ?: "Failed to retrieve announcements.",
+                    onRetry = {
+                        isLoading = true
+                    }
+                )
             } else if (noticeList.isEmpty()) {
-                Text("No notices found", modifier = Modifier.align(Alignment.Center))
+                BigBridzEmptyState(
+                    icon = BigBridzIcon.Notices,
+                    title = "No Notices Found",
+                    message = "No school announcements or notices have been published."
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

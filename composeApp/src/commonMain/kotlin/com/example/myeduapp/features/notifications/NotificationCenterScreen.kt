@@ -31,6 +31,8 @@ import com.example.myeduapp.core.ui.components.AppBackTopBar
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.AppLoaderCompact
 import com.example.myeduapp.core.ui.components.AppLoaderFullscreen
+import com.example.myeduapp.core.ui.components.BigBridzEmptyState
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.*
 import com.example.myeduapp.core.util.DateUtils
 import com.example.myeduapp.data.model.Notification
@@ -290,9 +292,11 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                             TextButton(onClick = { scope.launch { loadSent() } }) { Text("Retry", color = PrimaryBlue) }
                         }
                     }
-                    sent.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No sent notifications", color = SecondaryText, fontSize = 13.sp)
-                    }
+                    sent.isEmpty() -> BigBridzEmptyState(
+                        icon = BigBridzIcon.EmptyNotifications,
+                        title = "No Sent Notifications",
+                        message = "You have not sent any notification campaigns yet."
+                    )
                     else -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -305,13 +309,11 @@ fun NotificationCenterContent(onBack: () -> Unit) {
                 }
             } else when {
                 loading -> AppLoaderFullscreen(message = "Loading notification center")
-                filtered.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.NotificationsOff, contentDescription = null, tint = SecondaryText, modifier = Modifier.size(40.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("No alerts in this view", color = SecondaryText, fontSize = 13.sp)
-                    }
-                }
+                filtered.isEmpty() -> BigBridzEmptyState(
+                    icon = BigBridzIcon.EmptyNotifications,
+                    title = "No Alerts Found",
+                    message = "No notification alerts match your current filter."
+                )
                 else -> LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
