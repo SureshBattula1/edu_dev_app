@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myeduapp.core.ui.theme.*
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -57,6 +59,8 @@ import com.example.myeduapp.ui.screens.PlaceholderScreen
 import com.example.myeduapp.core.navigation.AppNavigation
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.NetworkAvatar
+import com.example.myeduapp.core.ui.icons.BigBridz3DIcon
+import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
 import com.example.myeduapp.data.repository.AuthRepository
 import com.example.myeduapp.data.repository.StudentRepository
 import com.example.myeduapp.data.model.User
@@ -219,8 +223,8 @@ class MainScreen : Screen {
             drawerState = drawerState,
             drawerContent = {
                 ModalDrawerSheet(
-                    drawerContainerColor = colorScheme.surface,
-                    drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+                    drawerContainerColor = CardBackground,
+                    drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -239,19 +243,26 @@ class MainScreen : Screen {
                                         navigator.push(ProfileScreen())
                                     }
                                 }
-                                .padding(24.dp)
+                                .padding(horizontal = 24.dp, vertical = 16.dp)
                         ) {
                             DrawerProfileAvatar(user = user, role = role)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(user.name, style = MaterialTheme.typography.titleLarge, color = colorScheme.onSurface)
-                            Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(user.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = PrimaryText)
+                            Text(role.name.replace("_", " "), style = MaterialTheme.typography.bodyMedium, color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                            Text("BigBridz Schools", style = MaterialTheme.typography.bodySmall, color = SecondaryText)
                         }
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = colorScheme.outline.copy(alpha = 0.5f))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = OutlineSoft)
                         
                         drawerItems.forEach { item ->
+                            val icon3D = BigBridzIconRegistry.forRoute(item.route.path)
                             NavigationDrawerItem(
-                                icon = { Icon(item.icon, contentDescription = null) },
-                                label = { Text(item.label, style = MaterialTheme.typography.bodyMedium) },
+                                icon = {
+                                    BigBridz3DIcon(
+                                        icon = icon3D,
+                                        size = 24.dp
+                                    )
+                                },
+                                label = { Text(item.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold) },
                                 selected = false,
                                 onClick = {
                                     scope.launch { drawerState.close() }
@@ -278,7 +289,7 @@ class MainScreen : Screen {
                                 colors = NavigationDrawerItemDefaults.colors(
                                     unselectedContainerColor = Color.Transparent,
                                     unselectedIconColor = colorScheme.onSurfaceVariant,
-                                    unselectedTextColor = colorScheme.onSurface
+                                    unselectedTextColor = PrimaryText
                                 )
                             )
                         }

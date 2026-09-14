@@ -33,8 +33,12 @@ import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.AppCard
 import com.example.myeduapp.core.ui.components.BigBridzDashboardModuleCard
 import com.example.myeduapp.core.ui.components.BigBridzStatCard
+import com.example.myeduapp.core.ui.components.GlobalSearchBottomSheet
+import com.example.myeduapp.core.ui.components.PromotionBannerCard
+import com.example.myeduapp.core.ui.components.TodayOverviewCard
 import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
+import com.example.myeduapp.core.ui.theme.*
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -53,11 +57,19 @@ fun DashboardScreen(
     
     val repository = remember { DashboardRepository() }
     var dashboardData by remember { mutableStateOf<DashboardResponse?>(null) }
+    var showSearchSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         repository.getDashboard().onSuccess {
             dashboardData = it
         }
+    }
+
+    if (showSearchSheet) {
+        GlobalSearchBottomSheet(
+            onDismiss = { showSearchSheet = false },
+            onNavigate = onNavigate
+        )
     }
 
     Scaffold(
@@ -68,12 +80,19 @@ fun DashboardScreen(
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             item {
-                GenericHeroHeader(user.name, role, onMenuClick, onNotificationClick, unreadCount)
+                GenericHeroHeader(
+                    name = user.name,
+                    role = role,
+                    onMenuClick = onMenuClick,
+                    onSearchClick = { showSearchSheet = true },
+                    onNotificationClick = onNotificationClick,
+                    unreadCount = unreadCount
+                )
             }
 
             item {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -82,6 +101,15 @@ fun DashboardScreen(
 
                     Text("QUICK ACTIONS", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
                     QuickActionsGrid(role, onNavigate)
+
+                    Text("TODAY OVERVIEW", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
+                    TodayOverviewCard(
+                        onClick = { onNavigate("attendance") }
+                    )
+
+                    PromotionBannerCard(
+                        onButtonClick = { onNavigate("notices") }
+                    )
                 }
             }
         }
@@ -89,19 +117,25 @@ fun DashboardScreen(
 }
 
 @Composable
-fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onNotificationClick: () -> Unit, unreadCount: Int = 0) {
-    val colorScheme = MaterialTheme.colorScheme
+fun GenericHeroHeader(
+    name: String,
+    role: UserRole,
+    onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onNotificationClick: () -> Unit,
+    unreadCount: Int = 0
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(260.dp)
             .clip(RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(colorScheme.primary, colorScheme.secondary)
+                    colors = listOf(FrenchBlue, TurquoiseSurf)
                 )
             )
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         Column(modifier = Modifier.statusBarsPadding()) {
             Row(
@@ -109,51 +143,94 @@ fun GenericHeroHeader(name: String, role: UserRole, onMenuClick: () -> Unit, onN
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = onMenuClick,
-                    modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
+                // Glass-style Menu Icon
+                Surface(
+                    modifier = Modifier.size(40.dp),
+                    shape = CircleShape,
+                    color = Color.White.copy(alpha = 0.2f)
                 ) {
-                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = colorScheme.onPrimary)
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                    }
                 }
-                
-                IconButton(
-                    onClick = onNotificationClick,
-                    modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BadgedBox(badge = {
-                        if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
-                    }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = colorScheme.onPrimary)
+                    // Glass-style Search Icon
+                    Surface(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) {
+                        IconButton(onClick = onSearchClick) {
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
+                        }
+                    }
+
+                    // Glass-style Notification Icon
+                    Surface(
+                        modifier = Modifier.size(40.dp),
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.2f)
+                    ) {
+                        IconButton(onClick = onNotificationClick) {
+                            BadgedBox(badge = {
+                                if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
+                            }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = Color.White)
+                            }
+                        }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.height(20.dp))
-            
-            Column {
-                Text(
-                    "WELCOME BACK,",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = colorScheme.onPrimary.copy(alpha = 0.7f),
-                    fontSize = 11.sp
-                )
-                Text(
-                    name.uppercase(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = colorScheme.onPrimary,
-                    fontSize = 22.sp
-                )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                "Good Morning",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 13.sp
+            )
+            Text(
+                name,
+                style = MaterialTheme.typography.headlineLarge,
+                color = Color.White,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Surface(
-                    color = colorScheme.onPrimary.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier.padding(top = 8.dp)
+                    color = Color.White.copy(alpha = 0.25f),
+                    shape = RoundedCornerShape(50)
                 ) {
                     Text(
                         role.name.replace("_", " "),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelLarge,
-                        color = colorScheme.onPrimary,
-                        fontSize = 10.sp
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Surface(
+                    color = Color.White.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(50)
+                ) {
+                    Text(
+                        "BigBridz Schools",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        fontSize = 11.sp
                     )
                 }
             }

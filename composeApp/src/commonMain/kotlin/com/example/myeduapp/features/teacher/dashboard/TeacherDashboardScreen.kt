@@ -29,6 +29,9 @@ import com.example.myeduapp.ui.components.AuthorizationWrapper
 import com.example.myeduapp.data.model.User
 import com.example.myeduapp.core.navigation.Route
 import com.example.myeduapp.core.ui.components.BigBridzDashboardModuleCard
+import com.example.myeduapp.core.ui.components.GlobalSearchBottomSheet
+import com.example.myeduapp.core.ui.components.PromotionBannerCard
+import com.example.myeduapp.core.ui.components.TodayOverviewCard
 import com.example.myeduapp.data.model.UserRole
 import com.example.myeduapp.core.ui.filters.rememberAcademicYearFilter
 import com.example.myeduapp.core.ui.icons.BigBridzIconRegistry
@@ -45,6 +48,14 @@ fun TeacherDashboardScreen(
     val academicYearFilter = rememberAcademicYearFilter()
     val academicYearLabel = academicYearFilter.selectedYear?.name?.uppercase() ?: "ACADEMIC YEAR"
     val colorScheme = MaterialTheme.colorScheme
+    var showSearchSheet by remember { mutableStateOf(false) }
+
+    if (showSearchSheet) {
+        GlobalSearchBottomSheet(
+            onDismiss = { showSearchSheet = false },
+            onNavigate = onNavigate
+        )
+    }
 
     AuthorizationWrapper(requiredRoles = listOf(UserRole.TEACHER)) {
         Scaffold(
@@ -56,7 +67,14 @@ fun TeacherDashboardScreen(
             ) {
                 // Sunrise Academic Hero Header
                 item {
-                    TeacherHeroHeader(user, academicYearLabel, onMenuClick, onNotificationClick, unreadCount)
+                    TeacherHeroHeader(
+                        user = user,
+                        academicYearLabel = academicYearLabel,
+                        onMenuClick = onMenuClick,
+                        onSearchClick = { showSearchSheet = true },
+                        onNotificationClick = onNotificationClick,
+                        unreadCount = unreadCount
+                    )
                 }
 
                 item {
@@ -85,6 +103,15 @@ fun TeacherDashboardScreen(
                             QuickActionItem("Assignments", Icons.AutoMirrored.Filled.Assignment, colorScheme.tertiary, Modifier.weight(1f)) { onNavigate("assignments") }
                             QuickActionItem("Exams", Icons.Default.Quiz, colorScheme.error, Modifier.weight(1f)) { onNavigate(Route.Exams.path) }
                         }
+
+                        Text("TODAY OVERVIEW", style = MaterialTheme.typography.headlineMedium, color = colorScheme.onSurface)
+                        TodayOverviewCard(
+                            onClick = { onNavigate(Route.Attendance.path) }
+                        )
+
+                        PromotionBannerCard(
+                            onButtonClick = { onNavigate(Route.Notices.path) }
+                        )
 
                         AppCard(
                             modifier = Modifier.fillMaxWidth(),
@@ -147,6 +174,7 @@ fun TeacherHeroHeader(
     user: User,
     academicYearLabel: String,
     onMenuClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onNotificationClick: () -> Unit,
     unreadCount: Int = 0
 ) {
@@ -190,14 +218,26 @@ fun TeacherHeroHeader(
                     )
                 }
 
-                IconButton(
-                    onClick = onNotificationClick,
-                    modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    BadgedBox(badge = {
-                        if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
-                    }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = colorScheme.onPrimary)
+                    IconButton(
+                        onClick = onSearchClick,
+                        modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = colorScheme.onPrimary)
+                    }
+
+                    IconButton(
+                        onClick = onNotificationClick,
+                        modifier = Modifier.size(40.dp).background(colorScheme.onPrimary.copy(alpha = 0.2f), CircleShape)
+                    ) {
+                        BadgedBox(badge = {
+                            if (unreadCount > 0) Badge { Text(if (unreadCount > 9) "9+" else "$unreadCount") }
+                        }) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = colorScheme.onPrimary)
+                        }
                     }
                 }
             }

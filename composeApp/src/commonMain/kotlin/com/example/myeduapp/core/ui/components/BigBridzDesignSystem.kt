@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,35 +23,81 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myeduapp.core.ui.icons.BigBridz3DIcon
 import com.example.myeduapp.core.ui.icons.BigBridzIcon
+import com.example.myeduapp.core.ui.theme.MutedText
+import com.example.myeduapp.core.ui.theme.OutlineSoft
 import com.example.myeduapp.core.ui.theme.SecondaryText
 
 /**
- * Surface container wrapper around 3D icons ensuring high contrast
- * and background softness in both Light and Dark mode.
+ * BIGBRIDZ SEARCH BAR
+ * Fixed Height: 52dp
+ */
+@Composable
+fun BigBridzSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    placeholder: String = "Search...",
+    modifier: Modifier = Modifier,
+    onClear: () -> Unit = { onQueryChange("") }
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, OutlineSoft)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Search, contentDescription = "Search", tint = SecondaryText, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(modifier = Modifier.weight(1f)) {
+                if (query.isEmpty()) {
+                    Text(placeholder, color = MutedText, fontSize = 14.sp)
+                }
+                TextField(
+                    value = query,
+                    onValueChange = onQueryChange,
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = SecondaryText, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 3D Icon container without circular background board.
  */
 @Composable
 fun BigBridz3DIconCard(
     icon: BigBridzIcon,
     modifier: Modifier = Modifier,
-    iconSize: Dp = 28.dp,
-    containerSize: Dp = 44.dp,
-    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+    iconSize: Dp = 32.dp,
+    containerSize: Dp = 32.dp,
+    backgroundColor: Color = Color.Transparent
 ) {
-    Surface(
-        modifier = modifier.size(containerSize),
-        shape = CircleShape,
-        color = backgroundColor,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            BigBridz3DIcon(
-                icon = icon,
-                size = iconSize
-            )
-        }
+        BigBridz3DIcon(
+            icon = icon,
+            size = iconSize
+        )
     }
 }
 
@@ -110,23 +158,21 @@ fun BigBridzDashboardModuleCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 10.dp),
+                .padding(horizontal = 4.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(contentAlignment = Alignment.TopEnd) {
-                BigBridz3DIconCard(
+                BigBridz3DIcon(
                     icon = icon,
-                    iconSize = 28.dp,
-                    containerSize = 42.dp,
-                    backgroundColor = colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    size = 32.dp
                 )
 
                 if (badgeText != null) {
                     Surface(
                         color = colorScheme.error,
                         shape = CircleShape,
-                        modifier = Modifier.offset(x = 4.dp, y = (-2).dp)
+                        modifier = Modifier.offset(x = 6.dp, y = (-4).dp)
                     ) {
                         Text(
                             text = badgeText,

@@ -29,10 +29,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myeduapp.core.ui.components.BigBridz3DIconCard
+import com.example.myeduapp.core.ui.icons.BigBridzIcon
 import com.example.myeduapp.core.ui.theme.AttendanceDimens
 import com.example.myeduapp.core.ui.theme.CardBackground
 import com.example.myeduapp.core.ui.theme.ErrorColor
 import com.example.myeduapp.core.ui.theme.PrimaryBlue
+import com.example.myeduapp.core.ui.theme.PrimaryText
 import com.example.myeduapp.core.ui.theme.SecondaryText
 import com.example.myeduapp.core.ui.theme.SuccessColor
 import com.example.myeduapp.core.ui.theme.WarningColor
@@ -90,7 +93,7 @@ fun AttendanceActionCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = CardBackground),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
@@ -98,18 +101,14 @@ fun AttendanceActionCard(
             modifier = Modifier.padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(52.dp)
-                    .clip(CircleShape)
-                    .background(accent.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(28.dp))
-            }
+            BigBridz3DIconCard(
+                icon = BigBridzIcon.Attendance,
+                iconSize = 32.dp,
+                containerSize = 52.dp
+            )
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = PrimaryText)
                 Text(subtitle, fontSize = 13.sp, color = SecondaryText)
             }
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SecondaryText)

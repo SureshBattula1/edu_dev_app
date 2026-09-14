@@ -54,14 +54,6 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color(0xFF7F1D1D)
 )
 
-private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(12.dp),
-    small = RoundedCornerShape(16.dp),
-    medium = RoundedCornerShape(20.dp), // Inner Action Buttons & Tabs
-    large = RoundedCornerShape(24.dp),  // Outer Cards
-    extraLarge = RoundedCornerShape(28.dp) // Floating Sheets
-)
-
 @Composable
 fun MyEduAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
